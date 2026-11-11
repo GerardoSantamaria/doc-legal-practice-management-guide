@@ -402,6 +402,7 @@ Al diseñar las pantallas aparecieron necesidades que el contrato de API (`api/o
 
 | Pantalla | Necesidad | Propuesta |
 | ----- | ----- | ----- |
+| P03, P07, P18 | Etiquetas "En N días hábiles" (3.10) | Un campo con los días hábiles que faltan en `DashboardItem` y en el resultado del paso. Hoy solo vienen el nivel y la fecha, y el frontend no puede contar días hábiles (el cálculo es solo del backend). |
 | P03, P07 | Avisos de "tu vencimiento cambió" (3.8) | Operaciones para listar los avisos sin ver y marcarlos como vistos, sobre la tabla `deadline_change_notices` que BE-46 pide agregar al modelo. |
 | P03 | Filtro "Míos / Todo el estudio" | Parámetro en `obtenerDashboard` (por ejemplo, `scope=MINE|ORGANIZATION`). Hoy devuelve "las alertas del usuario" sin definir si son las de sus expedientes o las de todo el estudio. |
 | P04 | Filtros por responsable, departamento y rol | Parámetros `responsibleUserId`, `departmentId` y `representedRole` en `listarExpedientes`. |

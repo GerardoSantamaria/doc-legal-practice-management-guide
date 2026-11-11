@@ -25,6 +25,7 @@ Este repositorio es **solo documental**: contiene la definición funcional, téc
 | `api/openapi_v1.yaml` | Contrato de la API de la V1 (OpenAPI 3.1). |
 | `backlog_historias_v1.md` | Épicas e historias de usuario de la V1. |
 | `tareas_backend_v1.md` | Tareas técnicas del backend, de 1 a 3 días cada una, con dependencias. |
+| `tareas_frontend_v1.md` | Tareas técnicas del frontend (React PWA y back-office), de 1 a 3 días cada una, con sus dependencias y las tareas del backend que necesitan. |
 | `legal/` | Borradores de términos y condiciones, política de privacidad y acuerdo de encargo del tratamiento. Requieren revisión de un abogado antes de publicarse. |
 | `matriz_flujo_laboral_pba_ley_11653.xlsx` | Matriz de ejemplo del flujo laboral, para validar con el abogado. |
 | `diagrama_flujo_laboral_pba_ley_11653.md` | Diagramas Mermaid generados desde la matriz. |

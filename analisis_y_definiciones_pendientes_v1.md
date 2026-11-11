@@ -26,7 +26,7 @@ La base de producto es buena: el alcance de la V1 es acotado, la separación ent
 | Base de datos | PostgreSQL | Decidido (ya estaba recomendado) |
 | Autenticación | Login con Google (OIDC) para la V1 | Decidido, con las condiciones de la sección 8 |
 | Hosting | En Argentina, elegido por precio y calidad según los criterios de la sección 7.3 | Decidido el país; falta elegir el proveedor |
-| Frontend | React como PWA (web responsive instalable) | Decidido |
+| Frontend | React como PWA (web responsive instalable). Herramientas propuestas (TypeScript, Vite, TanStack Query, MSW, Playwright, entre otras) en [`tareas_frontend_v1.md`](tareas_frontend_v1.md) | Decidido React; las herramientas, propuestas |
 | Stack del backend | Java 21, Maven y Flyway | Decidido |
 | Recuperación y disponibilidad | 99,5 % mensual, pérdida máxima de 1 hora de datos, recuperación en 4 horas en horario judicial (sección 7.4) | Decidido |
 | Repositorio | Este repositorio es solo documental; el código va en otro repositorio | Decidido |
