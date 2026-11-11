@@ -13,7 +13,6 @@ GRUPOS = [
     ("Ejecución, acuerdo y cierre", ["Ejecución", "Acuerdo", "Cierre"]),
 ]
 ROL_TEXTO = {"ACTORA": "Actora", "DEMANDADA": "Demandada", "TRIBUNAL": "Tribunal", "AMBAS": "Ambas partes"}
-PENDIENTES = {"HABILES_ADMINISTRATIVOS", "ANIOS", "FECHA_FIJADA"}
 ESTILOS = [
     "classDef actora fill:#DCE9F9,stroke:#1F4E79,color:#000",
     "classDef demandada fill:#FBE3D6,stroke:#C55A11,color:#000",
@@ -41,9 +40,12 @@ def plazo(nodo):
     descripcion = {
         "HABILES_JUDICIALES": f"{valor} días hábiles judiciales{gracia}",
         "CORRIDOS": f"{valor} días corridos{gracia}",
-        "HABILES_ADMINISTRATIVOS": f"{valor} días hábiles (LCT) - tipo pendiente",
-        "ANIOS": f"{valor} años - tipo pendiente",
-        "FECHA_FIJADA": "Fecha fijada por el tribunal - tipo pendiente",
+        "HABILES_ADMINISTRATIVOS": f"{valor} días hábiles administrativos",
+        "MESES": f"{valor} {'mes' if valor == 1 else 'meses'}{gracia}",
+        "ANIOS": f"{valor} {'año' if valor == 1 else 'años'}{gracia}",
+        "HORAS": f"{valor} horas",
+        "FECHA_FIJADA": "Fecha y hora fijadas por el tribunal",
+        "ANTICIPACION_HABILES_JUDICIALES": f"{valor} días hábiles de anticipación",
         "SIN_PLAZO": "Sin plazo",
     }
     return descripcion.get(tipo, f"{valor} {tipo}")
@@ -116,8 +118,6 @@ def diagrama_detalle(titulo, fases, nodos, por_id, salidas, grupo_de):
                         lineas.append(f'  {fuente} -.->|"{texto(condicion)}"| {d}')
 
     for n in propios:
-        if n["Plazo_Tipo"] in PENDIENTES:
-            lineas.append(f"  style {n['ID_Paso']} stroke-dasharray:6 4")
         if n["Es_Inicial"] == "SI" or n["Es_Final"] == "SI":
             lineas.append(f"  style {n['ID_Paso']} stroke-width:3px")
     lineas += [f"  {e}" for e in ESTILOS]
@@ -175,7 +175,6 @@ def main():
         "* **Cada caja es un hito** de la hoja `Nodos`: muestra el ID, el nombre, quién debe actuar y el plazo.",
         "* **Cada flecha es un camino** de la hoja `Transiciones`, rotulado con su condición de salida.",
         "* **Color de la caja según el responsable:** celeste = Actora; naranja = Demandada; gris = Tribunal; violeta = Ambas partes.",
-        "* **Borde punteado:** el tipo de plazo todavía no está soportado por el motor (días hábiles de la LCT, años, fecha fijada).",
         "* **Borde grueso:** hito inicial o hito final.",
         "* **\"Se abren en paralelo\"** (amarillo): esa condición abre varios hitos a la vez; por ejemplo, la prescripción corre mientras avanza el reclamo.",
         "* **\"Fin de este camino\"** (gris claro): el camino paralelo termina sin abrir otro hito.",

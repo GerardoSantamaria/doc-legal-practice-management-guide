@@ -1,0 +1,4128 @@
+openapi: 3.1.0
+info:
+  title: Asistente Legal - API V1
+  version: 0.1.0
+  description: |
+    Contrato de la API de la V1 (borrador v0.1). Se deriva de:
+    - `modelo_de_base_de_datos_relacional.md` (entidades y estados);
+    - `definicion_de_ui_ux_asistente_legal.md` (pantallas);
+    - `logica_matematica_calculadora_de_dias_habiles_judiciales.md` (motor de plazos);
+    - `modelado_de_amenazas_v1.md` (permisos y controles).
+
+    **Convenciones**
+    - JSON en camelCase. Fechas sin hora en `YYYY-MM-DD`; instantes en ISO 8601 con zona horaria.
+    - **Autenticación:** login con Google (OIDC, Authorization Code con PKCE) manejado por Spring Security. La API usa la cookie de sesión `__Host-SESSION` (`HttpOnly`, `Secure`, `SameSite=Lax`).
+    - **CSRF:** toda petición `POST`, `PUT`, `PATCH` o `DELETE` autenticada debe enviar el header `X-XSRF-TOKEN` con el valor de la cookie `XSRF-TOKEN`.
+    - **Estudio activo:** sale siempre de la sesión. Ningún endpoint de `/api/v1` recibe el `organizationId` del estudio sobre el que opera, salvo para elegir el estudio activo. Un ID de otro estudio responde 404.
+    - **Permisos:** la extensión `x-roles` indica qué roles del estudio pueden llamar cada operación (matriz de la sección 3 del modelado de amenazas). Sin `x-roles`, alcanza con estar autenticado.
+    - **Solo lectura:** con la suscripción en `SOLO_LECTURA`, toda escritura sobre datos del estudio responde 403 con el tipo de problema `suscripcion-solo-lectura`.
+    - **Validación:** los cuerpos no admiten campos desconocidos (`additionalProperties: false`). Los errores siguen RFC 9457 (`application/problem+json`) y nunca incluyen trazas ni detalles internos.
+    - **Paginación:** `page` desde 0 y `size` entre 1 y 100 (por defecto 20).
+    - **Límites:** las respuestas 429 incluyen `Retry-After` (valores en la sección 6 del modelado de amenazas).
+servers:
+  - url: https://app.example.com
+    description: Producción (dominio a definir)
+security:
+  - cookieAuth: []
+tags:
+  - name: Sesión
+  - name: Usuario
+  - name: Documentos legales
+  - name: Estudio
+  - name: Catálogos
+  - name: Clientes
+  - name: Expedientes
+  - name: Pasos
+  - name: Motor de plazos
+  - name: Alertas
+  - name: Suscripción
+  - name: Facturación
+  - name: Exportación
+  - name: Webhooks
+  - name: Back-office
+
+paths:
+  # ---------------------------------------------------------------- Sesión
+  /oauth2/authorization/google:
+    get:
+      tags: [Sesión]
+      summary: Iniciar el login con Google
+      description: Endpoint de Spring Security. Redirige a Google con PKCE. Al volver, crea la sesión propia y redirige a una ruta interna de la lista permitida.
+      operationId: iniciarLogin
+      security: []
+      responses:
+        '302':
+          description: Redirección a Google.
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /api/v1/session:
+    get:
+      tags: [Sesión]
+      summary: Sesión actual
+      operationId: obtenerSesion
+      responses:
+        '200':
+          description: Sesión activa.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Session'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /api/v1/session/logout:
+    post:
+      tags: [Sesión]
+      summary: Cerrar la sesión actual
+      operationId: cerrarSesion
+      responses:
+        '204':
+          description: Sesión revocada.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /api/v1/session/active-organization:
+    put:
+      tags: [Sesión]
+      summary: Elegir el estudio activo
+      description: Solo entre los estudios donde el usuario tiene una membresía activa.
+      operationId: elegirEstudioActivo
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [organizationId]
+              properties:
+                organizationId:
+                  $ref: '#/components/schemas/Id'
+      responses:
+        '204':
+          description: Estudio activo actualizado.
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # ---------------------------------------------------------------- Usuario
+  /api/v1/me:
+    get:
+      tags: [Usuario]
+      summary: Perfil del usuario
+      operationId: obtenerPerfil
+      responses:
+        '200':
+          description: Perfil.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Me'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /api/v1/me/devices:
+    get:
+      tags: [Usuario]
+      summary: Mis dispositivos con sesión
+      operationId: listarDispositivos
+      responses:
+        '200':
+          description: Dispositivos.
+          content:
+            application/json:
+              schema:
+                type: array
+                maxItems: 50
+                items:
+                  $ref: '#/components/schemas/Device'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /api/v1/me/devices/{deviceId}:
+    parameters:
+      - $ref: '#/components/parameters/DeviceId'
+    delete:
+      tags: [Usuario]
+      summary: Revocar un dispositivo
+      description: Cierra todas sus sesiones. Queda en la auditoría como `DISPOSITIVO_REVOCADO`.
+      operationId: revocarDispositivo
+      responses:
+        '204':
+          description: Dispositivo revocado.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/v1/me/notification-preferences:
+    get:
+      tags: [Usuario]
+      summary: Preferencias de aviso en el estudio activo
+      operationId: obtenerPreferencias
+      responses:
+        '200':
+          description: Preferencias.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotificationPreferences'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    put:
+      tags: [Usuario]
+      summary: Actualizar las preferencias de aviso
+      operationId: actualizarPreferencias
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NotificationPreferences'
+      responses:
+        '200':
+          description: Preferencias actualizadas.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotificationPreferences'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  # ---------------------------------------------------------------- Documentos legales
+  /api/v1/legal-documents/current:
+    get:
+      tags: [Documentos legales]
+      summary: Versiones vigentes de los documentos legales
+      operationId: listarDocumentosVigentes
+      security: []
+      responses:
+        '200':
+          description: Términos, privacidad y encargo vigentes.
+          content:
+            application/json:
+              schema:
+                type: array
+                maxItems: 3
+                items:
+                  $ref: '#/components/schemas/LegalDocumentVersion'
+  /api/v1/legal-acceptances/pending:
+    get:
+      tags: [Documentos legales]
+      summary: Documentos que el usuario todavía tiene que aceptar
+      description: Incluye el acuerdo de encargo solo si el usuario es titular del estudio activo.
+      operationId: listarAceptacionesPendientes
+      responses:
+        '200':
+          description: Versiones pendientes de aceptación.
+          content:
+            application/json:
+              schema:
+                type: array
+                maxItems: 3
+                items:
+                  $ref: '#/components/schemas/LegalDocumentVersion'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /api/v1/legal-acceptances:
+    post:
+      tags: [Documentos legales]
+      summary: Aceptar documentos legales
+      description: Registra `legal_acceptances` y `DOCUMENTO_LEGAL_ACEPTADO`. El encargo solo lo puede aceptar el titular, en nombre del estudio activo.
+      operationId: aceptarDocumentos
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [documentVersionIds]
+              properties:
+                documentVersionIds:
+                  type: array
+                  minItems: 1
+                  maxItems: 3
+                  uniqueItems: true
+                  items:
+                    $ref: '#/components/schemas/Id'
+      responses:
+        '204':
+          description: Aceptación registrada.
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  # ---------------------------------------------------------------- Estudio
+  /api/v1/organizations:
+    post:
+      tags: [Estudio]
+      summary: Crear un estudio (onboarding)
+      description: El usuario queda como `TITULAR` y el estudio empieza en `PRUEBA`. Exige haber aceptado los términos y la privacidad; el encargo se acepta inmediatamente después.
+      operationId: crearEstudio
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OrganizationCreate'
+      responses:
+        '201':
+          description: Estudio creado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Organization'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /api/v1/organization:
+    get:
+      tags: [Estudio]
+      summary: Estudio activo
+      operationId: obtenerEstudio
+      responses:
+        '200':
+          description: Estudio.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Organization'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    patch:
+      tags: [Estudio]
+      summary: Cambiar el nombre del estudio
+      operationId: actualizarEstudio
+      x-roles: [TITULAR]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [name]
+              properties:
+                name:
+                  type: string
+                  minLength: 2
+                  maxLength: 120
+      responses:
+        '200':
+          description: Estudio actualizado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Organization'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /api/v1/organization/members:
+    get:
+      tags: [Estudio]
+      summary: Miembros del estudio
+      operationId: listarMiembros
+      responses:
+        '200':
+          description: Miembros.
+          content:
+            application/json:
+              schema:
+                type: array
+                maxItems: 500
+                items:
+                  $ref: '#/components/schemas/Member'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /api/v1/organization/members/{membershipId}:
+    parameters:
+      - $ref: '#/components/parameters/MembershipId'
+    patch:
+      tags: [Estudio]
+      summary: Cambiar el rol de un miembro
+      operationId: cambiarRolMiembro
+      x-roles: [TITULAR]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [role]
+              properties:
+                role:
+                  $ref: '#/components/schemas/MembershipRole'
+      responses:
+        '200':
+          description: Rol actualizado (`ROL_CAMBIADO`).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Member'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+    delete:
+      tags: [Estudio]
+      summary: Revocar un miembro
+      description: Revoca, en la misma transacción, las sesiones de ese usuario en el estudio. No se puede revocar al único titular.
+      operationId: revocarMiembro
+      x-roles: [TITULAR]
+      responses:
+        '204':
+          description: Miembro revocado.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /api/v1/organization/invitations:
+    post:
+      tags: [Estudio]
+      summary: Invitar a un miembro
+      description: Envía un email con un token aleatorio de un solo uso, con vencimiento a los 7 días y atado al email invitado. Responde 409 si se superan los usuarios del plan.
+      operationId: invitarMiembro
+      x-roles: [TITULAR]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [email, role]
+              properties:
+                email:
+                  type: string
+                  format: email
+                  maxLength: 254
+                role:
+                  type: string
+                  enum: [ABOGADO, ASISTENTE]
+      responses:
+        '201':
+          description: Invitación creada (`MIEMBRO_INVITADO`).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Member'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /api/v1/invitations/accept:
+    post:
+      tags: [Estudio]
+      summary: Aceptar una invitación
+      description: El token viaja en el cuerpo, nunca en la URL de la API. El email de la cuenta de Google tiene que coincidir con el invitado.
+      operationId: aceptarInvitacion
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [token]
+              properties:
+                token:
+                  type: string
+                  minLength: 22
+                  maxLength: 128
+      responses:
+        '200':
+          description: Membresía activa.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Member'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/v1/organization/alert-settings:
+    get:
+      tags: [Alertas]
+      summary: Umbrales del semáforo y del resumen diario
+      description: Devuelve los del estudio, o los globales si el estudio no tiene propios.
+      operationId: obtenerParametrosAlertas
+      responses:
+        '200':
+          description: Parámetros vigentes.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AlertSettings'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    put:
+      tags: [Alertas]
+      summary: Ajustar los umbrales del estudio
+      operationId: actualizarParametrosAlertas
+      x-roles: [TITULAR]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AlertSettings'
+      responses:
+        '200':
+          description: Parámetros actualizados (`ALERTAS_CONFIGURADAS`).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AlertSettings'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /api/v1/organization/holidays:
+    post:
+      tags: [Catálogos]
+      summary: Marcar un día inhábil del estudio
+      description: Alcance `ORGANIZACION`. Recalcula los pasos pendientes afectados.
+      operationId: crearInhabilEstudio
+      x-roles: [TITULAR, ABOGADO]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [date, description]
+              properties:
+                date:
+                  type: string
+                  format: date
+                departmentId:
+                  $ref: '#/components/schemas/Id'
+                description:
+                  type: string
+                  minLength: 3
+                  maxLength: 200
+      responses:
+        '201':
+          description: Día inhábil creado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CalendarDay'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /api/v1/organization/holidays/{holidayId}:
+    parameters:
+      - $ref: '#/components/parameters/HolidayId'
+    delete:
+      tags: [Catálogos]
+      summary: Quitar un día inhábil del estudio
+      operationId: borrarInhabilEstudio
+      x-roles: [TITULAR, ABOGADO]
+      responses:
+        '204':
+          description: Quitado y pasos recalculados.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # ---------------------------------------------------------------- Catálogos
+  /api/v1/catalog/jurisdictions:
+    get:
+      tags: [Catálogos]
+      summary: Jurisdicciones
+      operationId: listarJurisdicciones
+      responses:
+        '200':
+          description: Jurisdicciones.
+          content:
+            application/json:
+              schema:
+                type: array
+                maxItems: 50
+                items:
+                  $ref: '#/components/schemas/CatalogItem'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /api/v1/catalog/departments:
+    get:
+      tags: [Catálogos]
+      summary: Departamentos judiciales de una jurisdicción
+      operationId: listarDepartamentos
+      parameters:
+        - name: jurisdictionId
+          in: query
+          required: true
+          schema:
+            $ref: '#/components/schemas/Id'
+      responses:
+        '200':
+          description: Departamentos.
+          content:
+            application/json:
+              schema:
+                type: array
+                maxItems: 100
+                items:
+                  $ref: '#/components/schemas/CatalogItem'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /api/v1/catalog/courts:
+    get:
+      tags: [Catálogos]
+      summary: Tribunales de un departamento
+      operationId: listarTribunales
+      parameters:
+        - name: departmentId
+          in: query
+          required: true
+          schema:
+            $ref: '#/components/schemas/Id'
+      responses:
+        '200':
+          description: Tribunales.
+          content:
+            application/json:
+              schema:
+                type: array
+                maxItems: 500
+                items:
+                  $ref: '#/components/schemas/Court'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /api/v1/catalog/regime-resolution:
+    get:
+      tags: [Catálogos]
+      summary: Resolver el régimen procesal
+      description: Aplica la "Resolución del régimen" del modelo de datos. Sirve para avisar en el alta antes de guardar.
+      operationId: resolverRegimen
+      parameters:
+        - name: departmentId
+          in: query
+          required: true
+          schema:
+            $ref: '#/components/schemas/Id'
+        - name: courtId
+          in: query
+          schema:
+            $ref: '#/components/schemas/Id'
+        - name: claimFiledOn
+          in: query
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Resultado de la resolución.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RegimeResolution'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /api/v1/catalog/flow-versions/{flowVersionId}:
+    parameters:
+      - name: flowVersionId
+        in: path
+        required: true
+        schema:
+          $ref: '#/components/schemas/Id'
+    get:
+      tags: [Catálogos]
+      summary: Hitos y transiciones de una versión de flujo
+      description: Para el mapa del flujo y para elegir los hitos actuales al dar de alta un expediente en curso.
+      operationId: obtenerVersionFlujo
+      responses:
+        '200':
+          description: Grafo de la versión.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FlowGraph'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/v1/calendar:
+    get:
+      tags: [Catálogos]
+      summary: Días inhábiles de un período
+      description: Incluye los del sistema, los del departamento y los del estudio activo, más el estado de la cobertura del calendario. El rango máximo es de 366 días.
+      operationId: obtenerCalendario
+      parameters:
+        - name: jurisdictionId
+          in: query
+          required: true
+          schema:
+            $ref: '#/components/schemas/Id'
+        - name: departmentId
+          in: query
+          schema:
+            $ref: '#/components/schemas/Id'
+        - name: from
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+        - name: to
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Calendario.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CalendarView'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  # ---------------------------------------------------------------- Clientes
+  /api/v1/clients:
+    get:
+      tags: [Clientes]
+      summary: Listar y buscar clientes
+      operationId: listarClientes
+      parameters:
+        - $ref: '#/components/parameters/Query'
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Size'
+      responses:
+        '200':
+          description: Página de clientes.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClientPage'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    post:
+      tags: [Clientes]
+      summary: Crear un cliente
+      description: Crear un cliente no consume el límite del plan; cuenta cuando tiene un expediente activo o pausado.
+      operationId: crearCliente
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClientInput'
+      responses:
+        '201':
+          description: Cliente creado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Client'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /api/v1/clients/{clientId}:
+    parameters:
+      - $ref: '#/components/parameters/ClientId'
+    get:
+      tags: [Clientes]
+      summary: Obtener un cliente
+      operationId: obtenerCliente
+      responses:
+        '200':
+          description: Cliente.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Client'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      tags: [Clientes]
+      summary: Actualizar un cliente
+      operationId: actualizarCliente
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClientInput'
+      responses:
+        '200':
+          description: Cliente actualizado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Client'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      tags: [Clientes]
+      summary: Eliminar un cliente
+      description: Borrado lógico. Responde 409 si tiene expedientes activos o pausados.
+      operationId: eliminarCliente
+      x-roles: [TITULAR, ABOGADO]
+      responses:
+        '204':
+          description: Cliente eliminado.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  # ---------------------------------------------------------------- Expedientes
+  /api/v1/cases:
+    get:
+      tags: [Expedientes]
+      summary: Listar y buscar expedientes
+      description: Búsqueda por carátula, número o cliente.
+      operationId: listarExpedientes
+      parameters:
+        - $ref: '#/components/parameters/Query'
+        - name: status
+          in: query
+          schema:
+            $ref: '#/components/schemas/CaseStatus'
+        - name: clientId
+          in: query
+          schema:
+            $ref: '#/components/schemas/Id'
+        - name: sort
+          in: query
+          schema:
+            type: string
+            enum: [PROXIMO_VENCIMIENTO, ULTIMA_ACTIVIDAD, CARATULA]
+            default: PROXIMO_VENCIMIENTO
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Size'
+      responses:
+        '200':
+          description: Página de expedientes.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CasePage'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    post:
+      tags: [Expedientes]
+      summary: Dar de alta un expediente
+      description: |
+        Alta nueva (arranca en el hito inicial) o alta de un expediente en curso (`inProgress`).
+        - Si el cliente no cuenta como activo y el estudio llegó al límite de su tramo: 409 `limite-clientes`.
+        - Si el régimen no se puede determinar: 422 `regimen-sin-definir`.
+        - Si el régimen es inconsistente: se crea igual, con `regimeWarning`, y se audita.
+        - Si el régimen no tiene flujo publicado (Ley 15.057 en la V1): se crea sin flujo y solo admite plazos sueltos.
+      operationId: crearExpediente
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CaseCreate'
+      responses:
+        '201':
+          description: Expediente creado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Case'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+  /api/v1/cases/{caseId}:
+    parameters:
+      - $ref: '#/components/parameters/CaseId'
+    get:
+      tags: [Expedientes]
+      summary: Ficha del expediente
+      operationId: obtenerExpediente
+      responses:
+        '200':
+          description: Expediente.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Case'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    patch:
+      tags: [Expedientes]
+      summary: Editar los datos del expediente
+      description: El tribunal no se puede cambiar si ya hay un flujo judicial asignado (el régimen no cambia).
+      operationId: actualizarExpediente
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CaseUpdate'
+      responses:
+        '200':
+          description: Expediente actualizado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Case'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+    delete:
+      tags: [Expedientes]
+      summary: Eliminar un expediente
+      description: Borrado lógico, auditado.
+      operationId: eliminarExpediente
+      x-roles: [TITULAR, ABOGADO]
+      responses:
+        '204':
+          description: Expediente eliminado.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/v1/cases/{caseId}/judicial-flow:
+    parameters:
+      - $ref: '#/components/parameters/CaseId'
+    post:
+      tags: [Expedientes]
+      summary: Interponer la demanda (asignar el flujo judicial)
+      description: Para un expediente que venía en la etapa previa. Resuelve el régimen con el tribunal y la fecha de interposición, y abre el hito inicial del flujo judicial.
+      operationId: asignarFlujoJudicial
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [courtId, claimFiledOn]
+              properties:
+                courtId:
+                  $ref: '#/components/schemas/Id'
+                claimFiledOn:
+                  type: string
+                  format: date
+      responses:
+        '200':
+          description: Flujo judicial asignado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Case'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+  /api/v1/cases/{caseId}/close:
+    parameters:
+      - $ref: '#/components/parameters/CaseId'
+    post:
+      tags: [Expedientes]
+      summary: Terminar el expediente
+      description: Libera el lugar en el límite de clientes si era el último expediente activo del cliente.
+      operationId: terminarExpediente
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [closedOn, closedReason]
+              properties:
+                closedOn:
+                  type: string
+                  format: date
+                closedReason:
+                  type: string
+                  enum: [SENTENCIA, ACUERDO, DESISTIMIENTO, OTRO]
+      responses:
+        '200':
+          description: Expediente terminado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Case'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/v1/cases/{caseId}/reopen:
+    parameters:
+      - $ref: '#/components/parameters/CaseId'
+    post:
+      tags: [Expedientes]
+      summary: Reactivar un expediente terminado
+      description: Aplica el control del límite de clientes (409 `limite-clientes`).
+      operationId: reactivarExpediente
+      responses:
+        '200':
+          description: Expediente activo.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Case'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /api/v1/cases/{caseId}/roadmap:
+    parameters:
+      - $ref: '#/components/parameters/CaseId'
+    get:
+      tags: [Expedientes]
+      summary: Mapa del flujo con el estado de cada hito
+      operationId: obtenerMapa
+      responses:
+        '200':
+          description: Mapa.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Roadmap'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/v1/cases/{caseId}/history:
+    parameters:
+      - $ref: '#/components/parameters/CaseId'
+    get:
+      tags: [Expedientes]
+      summary: Historial auditado del expediente
+      operationId: obtenerHistorial
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Size'
+      responses:
+        '200':
+          description: Página de eventos.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HistoryPage'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/v1/cases/{caseId}/parties:
+    parameters:
+      - $ref: '#/components/parameters/CaseId'
+    get:
+      tags: [Expedientes]
+      summary: Partes del expediente
+      operationId: listarPartes
+      responses:
+        '200':
+          description: Partes.
+          content:
+            application/json:
+              schema:
+                type: array
+                maxItems: 200
+                items:
+                  $ref: '#/components/schemas/Party'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    post:
+      tags: [Expedientes]
+      summary: Agregar una parte
+      operationId: crearParte
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PartyInput'
+      responses:
+        '201':
+          description: Parte creada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Party'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/v1/cases/{caseId}/parties/{partyId}:
+    parameters:
+      - $ref: '#/components/parameters/CaseId'
+      - name: partyId
+        in: path
+        required: true
+        schema:
+          $ref: '#/components/schemas/Id'
+    put:
+      tags: [Expedientes]
+      summary: Actualizar una parte
+      operationId: actualizarParte
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PartyInput'
+      responses:
+        '200':
+          description: Parte actualizada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Party'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      tags: [Expedientes]
+      summary: Quitar una parte
+      operationId: borrarParte
+      responses:
+        '204':
+          description: Parte quitada.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/v1/cases/{caseId}/suspensions:
+    parameters:
+      - $ref: '#/components/parameters/CaseId'
+    get:
+      tags: [Expedientes]
+      summary: Suspensiones de plazos del expediente
+      operationId: listarSuspensiones
+      responses:
+        '200':
+          description: Suspensiones.
+          content:
+            application/json:
+              schema:
+                type: array
+                maxItems: 100
+                items:
+                  $ref: '#/components/schemas/Suspension'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    post:
+      tags: [Expedientes]
+      summary: Cargar una suspensión de plazos
+      description: Recalcula los pasos pendientes del expediente (`SUSPENSION_CARGADA`).
+      operationId: crearSuspension
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SuspensionInput'
+      responses:
+        '201':
+          description: Suspensión cargada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Suspension'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/v1/cases/{caseId}/suspensions/{suspensionId}:
+    parameters:
+      - $ref: '#/components/parameters/CaseId'
+      - name: suspensionId
+        in: path
+        required: true
+        schema:
+          $ref: '#/components/schemas/Id'
+    delete:
+      tags: [Expedientes]
+      summary: Quitar una suspensión
+      description: Recalcula los pasos pendientes del expediente.
+      operationId: borrarSuspension
+      responses:
+        '204':
+          description: Suspensión quitada.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # ---------------------------------------------------------------- Pasos
+  /api/v1/cases/{caseId}/steps:
+    parameters:
+      - $ref: '#/components/parameters/CaseId'
+    get:
+      tags: [Pasos]
+      summary: Pasos del expediente
+      operationId: listarPasos
+      parameters:
+        - name: status
+          in: query
+          schema:
+            $ref: '#/components/schemas/StepStatus'
+      responses:
+        '200':
+          description: Pasos, del más reciente al más antiguo.
+          content:
+            application/json:
+              schema:
+                type: array
+                maxItems: 1000
+                items:
+                  $ref: '#/components/schemas/Step'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    post:
+      tags: [Pasos]
+      summary: Agregar un plazo suelto
+      description: Paso sin hito (`nodeId = null`). Usa el mismo motor y las mismas alertas y no cambia la posición en el flujo (`PLAZO_SUELTO_CREADO`).
+      operationId: crearPlazoSuelto
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StandaloneStepCreate'
+      responses:
+        '201':
+          description: Plazo suelto creado y calculado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Step'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+  /api/v1/cases/{caseId}/steps/{stepId}:
+    parameters:
+      - $ref: '#/components/parameters/CaseId'
+      - $ref: '#/components/parameters/StepId'
+    get:
+      tags: [Pasos]
+      summary: Detalle de un paso, con su checklist y sus transiciones posibles
+      operationId: obtenerPaso
+      responses:
+        '200':
+          description: Paso.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StepDetail'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/v1/cases/{caseId}/steps/{stepId}/deadline:
+    parameters:
+      - $ref: '#/components/parameters/CaseId'
+      - $ref: '#/components/parameters/StepId'
+    put:
+      tags: [Pasos]
+      summary: Cargar o corregir los datos del plazo
+      description: |
+        El backend recalcula el vencimiento. El cliente nunca envía un vencimiento calculado.
+        - Si `termValue` difiere del valor del hito, `termOverrideReason` es obligatorio.
+        - `manualDue` solo se acepta en un paso cargado con el expediente en curso, con motivo (`calculationStatus = MANUAL`).
+      operationId: actualizarPlazo
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeadlineUpdate'
+      responses:
+        '200':
+          description: Paso recalculado (`PLAZO_EDITADO`).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Step'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+  /api/v1/cases/{caseId}/steps/{stepId}/advance:
+    parameters:
+      - $ref: '#/components/parameters/CaseId'
+      - $ref: '#/components/parameters/StepId'
+    post:
+      tags: [Pasos]
+      summary: Avanzar de etapa
+      description: Completa el paso por la transición elegida y abre los pasos de destino (uno o varios en paralelo), sin Día Cero hasta que se cargue (`PASO_COMPLETADO`).
+      operationId: avanzarEtapa
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [transitionId]
+              properties:
+                transitionId:
+                  $ref: '#/components/schemas/Id'
+                filedAt:
+                  type: string
+                  format: date-time
+                  description: Fecha y hora del cargo, si se presentó un escrito.
+      responses:
+        '200':
+          description: Paso completado y pasos abiertos.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StepTransitionResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /api/v1/cases/{caseId}/steps/{stepId}/skip:
+    parameters:
+      - $ref: '#/components/parameters/CaseId'
+      - $ref: '#/components/parameters/StepId'
+    post:
+      tags: [Pasos]
+      summary: Saltear la etapa manualmente
+      operationId: saltearEtapa
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [transitionId, reason]
+              properties:
+                transitionId:
+                  $ref: '#/components/schemas/Id'
+                reason:
+                  $ref: '#/components/schemas/Reason'
+      responses:
+        '200':
+          description: Paso salteado (`ETAPA_SALTEADA`).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StepTransitionResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /api/v1/cases/{caseId}/steps/{stepId}/revert:
+    parameters:
+      - $ref: '#/components/parameters/CaseId'
+      - $ref: '#/components/parameters/StepId'
+    post:
+      tags: [Pasos]
+      summary: Retroceder etapa
+      description: |
+        `stepId` es el paso `COMPLETADO` cuyo avance se deshace. Los pasos que abrió pasan a `ANULADO` y él vuelve a `PENDIENTE` (`ETAPA_RETROCEDIDA`).
+        - 409 `retroceso-con-dependientes` si los pasos a anular abrieron otros.
+        - 409 `retroceso-requiere-confirmacion` si tienen actividad y `confirmActivity` es `false`; el problema lista qué actividad tienen.
+      operationId: retrocederEtapa
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [reason]
+              properties:
+                reason:
+                  $ref: '#/components/schemas/Reason'
+                confirmActivity:
+                  type: boolean
+                  default: false
+      responses:
+        '200':
+          description: Retroceso aplicado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StepRevertResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /api/v1/cases/{caseId}/steps/{stepId}/complete:
+    parameters:
+      - $ref: '#/components/parameters/CaseId'
+      - $ref: '#/components/parameters/StepId'
+    post:
+      tags: [Pasos]
+      summary: Marcar como cumplido un plazo suelto, o un vencido ("Lo cumplí")
+      description: En un hito con transiciones se usa `advance`; este endpoint es para plazos sueltos y para registrar el cargo de un paso vencido.
+      operationId: marcarCumplido
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [filedAt]
+              properties:
+                filedAt:
+                  type: string
+                  format: date-time
+      responses:
+        '200':
+          description: Paso completado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Step'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /api/v1/cases/{caseId}/steps/{stepId}/not-fulfilled:
+    parameters:
+      - $ref: '#/components/parameters/CaseId'
+      - $ref: '#/components/parameters/StepId'
+    post:
+      tags: [Pasos]
+      summary: Registrar que un plazo no se cumplió
+      description: Solo sobre un paso vencido. Si se indica `transitionId` (por ejemplo, "No contesta en término"), avanza por esa salida (`PLAZO_NO_CUMPLIDO`).
+      operationId: registrarNoCumplido
+      x-roles: [TITULAR, ABOGADO]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [reason]
+              properties:
+                reason:
+                  $ref: '#/components/schemas/Reason'
+                transitionId:
+                  $ref: '#/components/schemas/Id'
+      responses:
+        '200':
+          description: Paso en `NO_CUMPLIDO`.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StepTransitionResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /api/v1/cases/{caseId}/steps/{stepId}/annul:
+    parameters:
+      - $ref: '#/components/parameters/CaseId'
+      - $ref: '#/components/parameters/StepId'
+    post:
+      tags: [Pasos]
+      summary: Anular un plazo suelto cargado por error
+      description: Solo para plazos sueltos; los hitos se corrigen con `revert`.
+      operationId: anularPlazoSuelto
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [reason]
+              properties:
+                reason:
+                  $ref: '#/components/schemas/Reason'
+      responses:
+        '200':
+          description: Paso anulado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Step'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /api/v1/cases/{caseId}/steps/{stepId}/checklist-items/{itemId}:
+    parameters:
+      - $ref: '#/components/parameters/CaseId'
+      - $ref: '#/components/parameters/StepId'
+      - name: itemId
+        in: path
+        required: true
+        schema:
+          $ref: '#/components/schemas/Id'
+    put:
+      tags: [Pasos]
+      summary: Tildar o destildar un ítem del checklist
+      operationId: actualizarItemChecklist
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [done]
+              properties:
+                done:
+                  type: boolean
+      responses:
+        '200':
+          description: Ítem actualizado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChecklistItem'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # ---------------------------------------------------------------- Motor de plazos
+  /api/v1/deadline-calculations:
+    post:
+      tags: [Motor de plazos]
+      summary: Vista previa de un cálculo de plazo
+      description: No guarda nada. Usa el calendario del departamento del expediente, los inhábiles del estudio y las suspensiones del expediente. Devuelve los días computados para la pantalla "por qué vence ese día".
+      operationId: calcularPlazo
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeadlineCalculationRequest'
+      responses:
+        '200':
+          description: Resultado del motor.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeadlineCalculationResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+
+  # ---------------------------------------------------------------- Alertas
+  /api/v1/dashboard:
+    get:
+      tags: [Alertas]
+      summary: Dashboard de alertas
+      description: Vencidos sin cumplir, último momento (gracia), rojo, amarillo y oportunidades de la contraparte, según los umbrales de `alert-settings`.
+      operationId: obtenerDashboard
+      responses:
+        '200':
+          description: Alertas del usuario en el estudio activo.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Dashboard'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  # ---------------------------------------------------------------- Suscripción
+  /api/v1/plans:
+    get:
+      tags: [Suscripción]
+      summary: Planes y tramos contratables
+      operationId: listarPlanes
+      security: []
+      responses:
+        '200':
+          description: Planes activos.
+          content:
+            application/json:
+              schema:
+                type: array
+                maxItems: 50
+                items:
+                  $ref: '#/components/schemas/Plan'
+  /api/v1/subscription:
+    get:
+      tags: [Suscripción]
+      summary: Suscripción del estudio y uso del plan
+      operationId: obtenerSuscripcion
+      responses:
+        '200':
+          description: Suscripción.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Subscription'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /api/v1/subscription/checkout:
+    post:
+      tags: [Suscripción]
+      summary: Iniciar el pago de un plan
+      description: El backend crea el checkout en el proveedor con el plan y el precio de la base; el cliente no envía importes.
+      operationId: iniciarCheckout
+      x-roles: [TITULAR]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PlanSelection'
+      responses:
+        '201':
+          description: Checkout creado.
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required: [checkoutUrl]
+                properties:
+                  checkoutUrl:
+                    type: string
+                    format: uri
+                    description: URL del checkout alojado del proveedor.
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /api/v1/subscription/plan-change/preview:
+    post:
+      tags: [Suscripción]
+      summary: Simular un cambio de plan
+      operationId: simularCambioPlan
+      x-roles: [TITULAR]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PlanSelection'
+      responses:
+        '200':
+          description: Efecto del cambio.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlanChangePreview'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /api/v1/subscription/plan-change:
+    post:
+      tags: [Suscripción]
+      summary: Cambiar de plan
+      description: La subida es inmediata. La bajada se programa para el próximo período y responde 409 si los clientes activos superan el nuevo límite (`PLAN_CAMBIADO`).
+      operationId: cambiarPlan
+      x-roles: [TITULAR]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PlanSelection'
+      responses:
+        '200':
+          description: Cambio aplicado o programado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Subscription'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /api/v1/subscription/cancellation:
+    post:
+      tags: [Suscripción]
+      summary: Dar de baja
+      description: Botón de baja. Tiene efecto al final del período pagado; confirma por email con número de trámite (`BAJA_SOLICITADA`).
+      operationId: darDeBaja
+      x-roles: [TITULAR]
+      responses:
+        '200':
+          description: Baja registrada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CancellationReceipt'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+    delete:
+      tags: [Suscripción]
+      summary: Dejar sin efecto la baja antes del fin del período
+      operationId: anularBaja
+      x-roles: [TITULAR]
+      responses:
+        '204':
+          description: La suscripción sigue activa.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /api/v1/subscription/withdrawal:
+    post:
+      tags: [Suscripción]
+      summary: Arrepentimiento
+      description: Dentro de los 10 días corridos de la contratación o del primer cobro. Devuelve lo cobrado y genera una nota de crédito (`ARREPENTIMIENTO_SOLICITADO`). Fuera de plazo, 409.
+      operationId: arrepentirse
+      x-roles: [TITULAR]
+      responses:
+        '200':
+          description: Arrepentimiento registrado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CancellationReceipt'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  # ---------------------------------------------------------------- Facturación
+  /api/v1/billing-profile:
+    get:
+      tags: [Facturación]
+      summary: Datos fiscales del estudio
+      operationId: obtenerDatosFiscales
+      x-roles: [TITULAR]
+      responses:
+        '200':
+          description: Datos fiscales.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BillingProfile'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      tags: [Facturación]
+      summary: Cargar o actualizar los datos fiscales
+      description: Valida el dígito verificador del CUIT. Las facturas ya emitidas no cambian.
+      operationId: actualizarDatosFiscales
+      x-roles: [TITULAR]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BillingProfile'
+      responses:
+        '200':
+          description: Datos fiscales guardados.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BillingProfile'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /api/v1/invoices:
+    get:
+      tags: [Facturación]
+      summary: Facturas del estudio
+      operationId: listarFacturas
+      x-roles: [TITULAR]
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Size'
+      responses:
+        '200':
+          description: Página de facturas.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvoicePage'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /api/v1/invoices/{invoiceId}/pdf:
+    parameters:
+      - name: invoiceId
+        in: path
+        required: true
+        schema:
+          $ref: '#/components/schemas/Id'
+    get:
+      tags: [Facturación]
+      summary: Descargar el PDF de una factura autorizada
+      operationId: descargarFactura
+      x-roles: [TITULAR]
+      responses:
+        '200':
+          description: PDF con código QR.
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  # ---------------------------------------------------------------- Exportación
+  /api/v1/exports:
+    post:
+      tags: [Exportación]
+      summary: Pedir la exportación completa del estudio
+      description: Asíncrona. Incluye clientes, expedientes, pasos e historial (`DATOS_EXPORTADOS`). Se permite también en solo lectura.
+      operationId: pedirExportacion
+      x-roles: [TITULAR]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [format]
+              properties:
+                format:
+                  type: string
+                  enum: [JSON, XLSX]
+      responses:
+        '202':
+          description: Exportación en preparación.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Export'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /api/v1/exports/{exportId}:
+    parameters:
+      - name: exportId
+        in: path
+        required: true
+        schema:
+          $ref: '#/components/schemas/Id'
+    get:
+      tags: [Exportación]
+      summary: Estado de una exportación
+      operationId: obtenerExportacion
+      x-roles: [TITULAR]
+      responses:
+        '200':
+          description: Estado; si está lista, incluye un enlace firmado de un solo uso válido por 24 horas.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Export'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # ---------------------------------------------------------------- Webhooks
+  /webhooks/payments/{provider}:
+    parameters:
+      - name: provider
+        in: path
+        required: true
+        schema:
+          type: string
+          enum: [mercado-pago]
+    post:
+      tags: [Webhooks]
+      summary: Avisos del proveedor de pagos
+      description: |
+        Sin sesión. Se procesa solo si la firma del proveedor es válida y está dentro de la ventana de tiempo.
+        El estado del pago se confirma consultando la API del proveedor, y el importe se compara con el precio del plan.
+        Un mismo evento se procesa una sola vez (`UNIQUE (provider, provider_event_id)`).
+        El formato exacto del cuerpo y de los headers de firma depende del proveedor elegido.
+      operationId: recibirWebhookPagos
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: Cuerpo definido por el proveedor; solo se guardan los campos de la lista permitida.
+      responses:
+        '200':
+          description: Evento recibido (también si era un duplicado).
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          description: Firma inválida. Se registra y genera alerta.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+
+  # ---------------------------------------------------------------- Back-office
+  /api/admin/v1/calendar-changes/preview:
+    post:
+      tags: [Back-office]
+      summary: Simular un cambio de calendario
+      description: Informa cuántos pasos pendientes cambian y cuántos se atrasan (modelado de amenazas, MOT-02).
+      operationId: simularCambioCalendario
+      x-roles: [ADMIN]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CalendarChangeSet'
+      responses:
+        '200':
+          description: Impacto del cambio.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CalendarChangeImpact'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /api/admin/v1/calendar-changes:
+    post:
+      tags: [Back-office]
+      summary: Aplicar un cambio de calendario
+      description: Incrementa la versión del calendario y recalcula los pasos afectados. Si algún vencimiento se atrasa, exige `confirmDelays` (`CALENDARIO_MODIFICADO`).
+      operationId: aplicarCambioCalendario
+      x-roles: [ADMIN]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CalendarChangeSet'
+      responses:
+        '200':
+          description: Cambio aplicado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CalendarChangeImpact'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /api/admin/v1/calendar-coverage:
+    get:
+      tags: [Back-office]
+      summary: Cobertura del calendario por jurisdicción
+      operationId: listarCobertura
+      x-roles: [ADMIN]
+      responses:
+        '200':
+          description: Cobertura.
+          content:
+            application/json:
+              schema:
+                type: array
+                maxItems: 50
+                items:
+                  $ref: '#/components/schemas/CalendarCoverage'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    put:
+      tags: [Back-office]
+      summary: Actualizar la cobertura (por ejemplo, pasar a OFICIAL)
+      description: El estado `OFICIAL` exige un validador distinto del usuario que publica.
+      operationId: actualizarCobertura
+      x-roles: [ADMIN]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CalendarCoverage'
+      responses:
+        '200':
+          description: Cobertura actualizada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CalendarCoverage'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /api/admin/v1/flow-imports:
+    post:
+      tags: [Back-office]
+      summary: Importar una planilla de matriz
+      description: Máximo 5 MB. Se valida que sea un ZIP de Office por sus bytes iniciales, con límites de descompresión y sin evaluar fórmulas. Aplica las validaciones del documento de proyecto, sección 4.
+      operationId: importarMatriz
+      x-roles: [ADMIN]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [file, flowId]
+              properties:
+                file:
+                  type: string
+                  format: binary
+                flowId:
+                  $ref: '#/components/schemas/Id'
+            encoding:
+              file:
+                contentType: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
+      responses:
+        '201':
+          description: Importación validada (con o sin errores).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FlowImport'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '413':
+          description: Archivo demasiado grande.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+  /api/admin/v1/flow-imports/{importId}:
+    parameters:
+      - $ref: '#/components/parameters/ImportId'
+    get:
+      tags: [Back-office]
+      summary: Resultado de una importación
+      operationId: obtenerImportacion
+      x-roles: [ADMIN]
+      responses:
+        '200':
+          description: Importación.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FlowImport'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/admin/v1/flow-imports/{importId}/publish:
+    parameters:
+      - $ref: '#/components/parameters/ImportId'
+    post:
+      tags: [Back-office]
+      summary: Publicar la importación como nueva versión del flujo
+      description: Solo si la importación no tiene errores. La versión publicada es inmutable; los expedientes existentes conservan la suya.
+      operationId: publicarVersionFlujo
+      x-roles: [ADMIN]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [approvedByLegal]
+              properties:
+                approvedByLegal:
+                  type: string
+                  minLength: 3
+                  maxLength: 120
+                  description: Quién del equipo legal validó el contenido de la matriz.
+                notes:
+                  type: string
+                  maxLength: 2000
+                  description: Qué cambió respecto de la versión anterior.
+      responses:
+        '201':
+          description: Versión publicada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FlowVersionSummary'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /api/admin/v1/jurisdiction-schedules:
+    get:
+      tags: [Back-office]
+      summary: Horarios judiciales vigentes
+      operationId: listarHorarios
+      x-roles: [ADMIN]
+      responses:
+        '200':
+          description: Horarios.
+          content:
+            application/json:
+              schema:
+                type: array
+                maxItems: 200
+                items:
+                  $ref: '#/components/schemas/JurisdictionSchedule'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      tags: [Back-office]
+      summary: Cargar un horario nuevo con fecha de vigencia
+      description: Recalcula los pasos pendientes afectados.
+      operationId: crearHorario
+      x-roles: [ADMIN]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/JurisdictionSchedule'
+      responses:
+        '201':
+          description: Horario creado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JurisdictionSchedule'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /api/admin/v1/department-regimes:
+    get:
+      tags: [Back-office]
+      summary: Régimen vigente por departamento
+      operationId: listarRegimenesDepartamento
+      x-roles: [ADMIN]
+      responses:
+        '200':
+          description: Períodos de vigencia.
+          content:
+            application/json:
+              schema:
+                type: array
+                maxItems: 500
+                items:
+                  $ref: '#/components/schemas/DepartmentRegime'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      tags: [Back-office]
+      summary: Cargar un período de régimen para un departamento
+      operationId: crearRegimenDepartamento
+      x-roles: [ADMIN]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DepartmentRegime'
+      responses:
+        '201':
+          description: Período creado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DepartmentRegime'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /api/admin/v1/courts:
+    post:
+      tags: [Back-office]
+      summary: Crear un tribunal
+      operationId: crearTribunal
+      x-roles: [ADMIN]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CourtInput'
+      responses:
+        '201':
+          description: Tribunal creado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Court'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /api/admin/v1/courts/{courtId}:
+    parameters:
+      - name: courtId
+        in: path
+        required: true
+        schema:
+          $ref: '#/components/schemas/Id'
+    put:
+      tags: [Back-office]
+      summary: Actualizar un tribunal
+      description: No se puede cambiar el régimen de un tribunal con expedientes judiciales asignados.
+      operationId: actualizarTribunal
+      x-roles: [ADMIN]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CourtInput'
+      responses:
+        '200':
+          description: Tribunal actualizado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Court'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+components:
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: __Host-SESSION
+      description: Cookie de sesión propia del backend. En operaciones que modifican datos se exige además el header `X-XSRF-TOKEN`.
+
+  parameters:
+    CaseId:
+      name: caseId
+      in: path
+      required: true
+      schema:
+        $ref: '#/components/schemas/Id'
+    StepId:
+      name: stepId
+      in: path
+      required: true
+      schema:
+        $ref: '#/components/schemas/Id'
+    ClientId:
+      name: clientId
+      in: path
+      required: true
+      schema:
+        $ref: '#/components/schemas/Id'
+    DeviceId:
+      name: deviceId
+      in: path
+      required: true
+      schema:
+        $ref: '#/components/schemas/Id'
+    MembershipId:
+      name: membershipId
+      in: path
+      required: true
+      schema:
+        $ref: '#/components/schemas/Id'
+    HolidayId:
+      name: holidayId
+      in: path
+      required: true
+      schema:
+        $ref: '#/components/schemas/Id'
+    ImportId:
+      name: importId
+      in: path
+      required: true
+      schema:
+        $ref: '#/components/schemas/Id'
+    Query:
+      name: q
+      in: query
+      description: Texto de búsqueda.
+      schema:
+        type: string
+        minLength: 2
+        maxLength: 100
+    Page:
+      name: page
+      in: query
+      schema:
+        type: integer
+        minimum: 0
+        maximum: 10000
+        default: 0
+    Size:
+      name: size
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 20
+
+  responses:
+    BadRequest:
+      description: Datos inválidos. `errors` lista los campos.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    Unauthorized:
+      description: Sin sesión válida.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    Forbidden:
+      description: Sin permiso para la operación, o suscripción en solo lectura (`suscripcion-solo-lectura`).
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    NotFound:
+      description: No existe o no pertenece al estudio activo.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    Conflict:
+      description: |
+        Conflicto con el estado actual. Tipos posibles: `limite-clientes`, `limite-usuarios`, `retroceso-con-dependientes`,
+        `retroceso-requiere-confirmacion`, `paso-no-pendiente`, `plazo-arrepentimiento-vencido`, `bajada-supera-limite`,
+        `vencimientos-atrasados-sin-confirmar`, `importacion-con-errores`, `cliente-con-expedientes-activos`.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    UnprocessableEntity:
+      description: |
+        Datos válidos que no se pueden procesar. Tipos posibles: `regimen-sin-definir`, `calendario-no-cargado`,
+        `tipo-no-admite-gracia`, `tipo-no-admite-prorroga`, `valor-fuera-de-rango`.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    TooManyRequests:
+      description: Límite de peticiones superado.
+      headers:
+        Retry-After:
+          schema:
+            type: integer
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+
+  schemas:
+    # ------------------------------------------------------------ Comunes
+    Id:
+      type: string
+      format: uuid
+    Reason:
+      type: string
+      minLength: 3
+      maxLength: 500
+      description: Motivo. No incluir datos de salud ni otros datos sensibles.
+    Problem:
+      type: object
+      additionalProperties: false
+      required: [type, title, status]
+      properties:
+        type:
+          type: string
+          format: uri-reference
+          description: Ej. `/problemas/limite-clientes`.
+        title:
+          type: string
+        status:
+          type: integer
+        detail:
+          type: string
+        correlationId:
+          type: string
+          description: Permite cruzar con los logs internos.
+        errors:
+          type: array
+          maxItems: 100
+          items:
+            type: object
+            additionalProperties: false
+            required: [field, message]
+            properties:
+              field:
+                type: string
+              message:
+                type: string
+    PageMeta:
+      type: object
+      additionalProperties: false
+      required: [page, size, totalElements, totalPages]
+      properties:
+        page:
+          type: integer
+        size:
+          type: integer
+        totalElements:
+          type: integer
+        totalPages:
+          type: integer
+    CatalogItem:
+      type: object
+      additionalProperties: false
+      required: [id, code, name]
+      properties:
+        id:
+          $ref: '#/components/schemas/Id'
+        code:
+          type: string
+        name:
+          type: string
+
+    # ------------------------------------------------------------ Enums
+    TermType:
+      type: string
+      enum: [HABILES_JUDICIALES, CORRIDOS, HABILES_ADMINISTRATIVOS, MESES, ANIOS, HORAS, FECHA_FIJADA, ANTICIPACION_HABILES_JUDICIALES, SIN_PLAZO]
+    DeadlineLimitType:
+      type: string
+      enum: [CIERRE_HORARIO_JUDICIAL, FIN_DEL_DIA]
+    StepStatus:
+      type: string
+      enum: [PENDIENTE, COMPLETADO, SALTEADO, NO_CUMPLIDO, ANULADO]
+    CalculationStatus:
+      type: string
+      enum: [CALCULADO, SIN_VENCIMIENTO, CALENDARIO_NO_CARGADO, MANUAL]
+    NotificationType:
+      type: string
+      enum: [CEDULA_PAPEL, ELECTRONICA, MINISTERIO_LEY, PERSONAL, OTRA]
+    MembershipRole:
+      type: string
+      enum: [TITULAR, ABOGADO, ASISTENTE]
+    CaseStatus:
+      type: string
+      enum: [ACTIVO, PAUSADO, TERMINADO]
+    RepresentedRole:
+      type: string
+      enum: [ACTORA, DEMANDADA]
+    ResponsibleRole:
+      type: string
+      enum: [ACTORA, DEMANDADA, TRIBUNAL, AMBAS]
+    Perspective:
+      type: string
+      description: Cruce del responsable del paso con el rol representado.
+      enum: [PROPIO, CONTRAPARTE, TRIBUNAL]
+    CourtType:
+      type: string
+      enum: [TRIBUNAL_TRABAJO, JUZGADO_LABORAL, CAMARA_APELACION]
+    AlertLevel:
+      type: string
+      enum: [VENCIDO_SIN_CUMPLIR, ULTIMO_MOMENTO, ROJO, AMARILLO, OPORTUNIDAD]
+
+    # ------------------------------------------------------------ Sesión y usuario
+    Session:
+      type: object
+      additionalProperties: false
+      required: [userId, activeOrganizationId, memberships, systemRole]
+      properties:
+        userId:
+          $ref: '#/components/schemas/Id'
+        systemRole:
+          type: string
+          enum: [USUARIO, ADMIN]
+        activeOrganizationId:
+          oneOf:
+            - $ref: '#/components/schemas/Id'
+            - type: 'null'
+        memberships:
+          type: array
+          maxItems: 50
+          items:
+            type: object
+            additionalProperties: false
+            required: [organizationId, organizationName, role]
+            properties:
+              organizationId:
+                $ref: '#/components/schemas/Id'
+              organizationName:
+                type: string
+              role:
+                $ref: '#/components/schemas/MembershipRole'
+        expiresAt:
+          type: string
+          format: date-time
+    Me:
+      type: object
+      additionalProperties: false
+      required: [id, fullName, primaryEmail]
+      properties:
+        id:
+          $ref: '#/components/schemas/Id'
+        fullName:
+          type: string
+        primaryEmail:
+          type: string
+          format: email
+        lastLoginAt:
+          type: string
+          format: date-time
+    Device:
+      type: object
+      additionalProperties: false
+      required: [id, displayName, firstSeenAt, lastSeenAt, current]
+      properties:
+        id:
+          $ref: '#/components/schemas/Id'
+        displayName:
+          type: string
+          description: Ej. "Chrome en Windows".
+        firstSeenAt:
+          type: string
+          format: date-time
+        lastSeenAt:
+          type: string
+          format: date-time
+        current:
+          type: boolean
+          description: Si es el dispositivo de esta petición.
+    NotificationPreferences:
+      type: object
+      additionalProperties: false
+      required: [dailyDigestEnabled, digestIncludesCaseDetails, counterpartyAlertsEnabled]
+      properties:
+        dailyDigestEnabled:
+          type: boolean
+        digestIncludesCaseDetails:
+          type: boolean
+          description: Por defecto `false` (minimización de datos).
+        counterpartyAlertsEnabled:
+          type: boolean
+    LegalDocumentVersion:
+      type: object
+      additionalProperties: false
+      required: [id, documentType, version, url, contentSha256, effectiveAt]
+      properties:
+        id:
+          $ref: '#/components/schemas/Id'
+        documentType:
+          type: string
+          enum: [TERMINOS, PRIVACIDAD, ENCARGO_DEL_TRATAMIENTO]
+        version:
+          type: string
+        url:
+          type: string
+          format: uri
+        contentSha256:
+          type: string
+          pattern: '^[a-f0-9]{64}$'
+        effectiveAt:
+          type: string
+          format: date-time
+        changeSummary:
+          type: string
+
+    # ------------------------------------------------------------ Estudio
+    OrganizationCreate:
+      type: object
+      additionalProperties: false
+      required: [name, type]
+      properties:
+        name:
+          type: string
+          minLength: 2
+          maxLength: 120
+        type:
+          type: string
+          enum: [INDIVIDUAL, ESTUDIO]
+    Organization:
+      type: object
+      additionalProperties: false
+      required: [id, name, type]
+      properties:
+        id:
+          $ref: '#/components/schemas/Id'
+        name:
+          type: string
+        type:
+          type: string
+          enum: [INDIVIDUAL, ESTUDIO]
+    Member:
+      type: object
+      additionalProperties: false
+      required: [membershipId, fullName, email, role, status]
+      properties:
+        membershipId:
+          $ref: '#/components/schemas/Id'
+        fullName:
+          type: string
+        email:
+          type: string
+          format: email
+        role:
+          $ref: '#/components/schemas/MembershipRole'
+        status:
+          type: string
+          enum: [INVITADO, ACTIVO, REVOCADO]
+    AlertSettings:
+      type: object
+      additionalProperties: false
+      required: [redBusinessDays, yellowBusinessDays, digestTime, digestLookaheadBusinessDays]
+      properties:
+        scope:
+          type: string
+          enum: [GLOBAL, ORGANIZACION]
+          readOnly: true
+        redBusinessDays:
+          type: integer
+          minimum: 0
+          maximum: 10
+        yellowBusinessDays:
+          type: integer
+          minimum: 1
+          maximum: 30
+          description: Debe ser mayor que `redBusinessDays`.
+        digestTime:
+          type: string
+          pattern: '^([01][0-9]|2[0-3]):[0-5][0-9]$'
+          description: Hora local de la jurisdicción, `HH:MM`.
+        digestLookaheadBusinessDays:
+          type: integer
+          minimum: 1
+          maximum: 30
+
+    # ------------------------------------------------------------ Catálogos
+    Court:
+      type: object
+      additionalProperties: false
+      required: [id, name, departmentId, courtType, proceduralRegimeCode, isActive]
+      properties:
+        id:
+          $ref: '#/components/schemas/Id'
+        name:
+          type: string
+        departmentId:
+          $ref: '#/components/schemas/Id'
+        courtType:
+          $ref: '#/components/schemas/CourtType'
+        proceduralRegimeCode:
+          type: string
+          enum: [PBA_LAB_LEY_11653, PBA_LAB_LEY_15057]
+        isActive:
+          type: boolean
+    CourtInput:
+      type: object
+      additionalProperties: false
+      required: [name, departmentId, courtType, proceduralRegimeCode, isActive]
+      properties:
+        name:
+          type: string
+          minLength: 3
+          maxLength: 200
+        departmentId:
+          $ref: '#/components/schemas/Id'
+        courtType:
+          $ref: '#/components/schemas/CourtType'
+        proceduralRegimeCode:
+          type: string
+          enum: [PBA_LAB_LEY_11653, PBA_LAB_LEY_15057]
+        isActive:
+          type: boolean
+    RegimeResolution:
+      type: object
+      additionalProperties: false
+      required: [result, hasPublishedFlow]
+      properties:
+        result:
+          type: string
+          enum: [DEFINIDO, INCONSISTENTE, SIN_DEFINIR]
+        regimeCode:
+          type: string
+          enum: [PBA_LAB_LEY_11653, PBA_LAB_LEY_15057]
+        source:
+          type: string
+          enum: [TRIBUNAL, DEPARTAMENTO_Y_FECHA]
+        regimeByCourt:
+          type: string
+        regimeByDepartment:
+          type: string
+        hasPublishedFlow:
+          type: boolean
+          description: Si es `false`, el expediente solo admite plazos sueltos.
+    FlowGraph:
+      type: object
+      additionalProperties: false
+      required: [flowVersionId, flowKind, nodes, transitions]
+      properties:
+        flowVersionId:
+          $ref: '#/components/schemas/Id'
+        flowKind:
+          type: string
+          enum: [PREJUDICIAL, JUDICIAL]
+        nodes:
+          type: array
+          maxItems: 500
+          items:
+            $ref: '#/components/schemas/FlowNode'
+        transitions:
+          type: array
+          maxItems: 2000
+          items:
+            $ref: '#/components/schemas/FlowTransition'
+    FlowNode:
+      type: object
+      additionalProperties: false
+      required: [id, code, name, phase, responsibleRole, termType, defaultTermValue, appliesGracePeriod, isInitial, isFinal]
+      properties:
+        id:
+          $ref: '#/components/schemas/Id'
+        code:
+          type: string
+          description: Ej. `LAB_050`.
+        name:
+          type: string
+        phase:
+          type: string
+        responsibleRole:
+          $ref: '#/components/schemas/ResponsibleRole'
+        termType:
+          $ref: '#/components/schemas/TermType'
+        defaultTermValue:
+          type: integer
+        appliesGracePeriod:
+          type: boolean
+        legalBasis:
+          type: string
+        isInitial:
+          type: boolean
+        isFinal:
+          type: boolean
+    FlowTransition:
+      type: object
+      additionalProperties: false
+      required: [id, fromNodeId, condition]
+      properties:
+        id:
+          $ref: '#/components/schemas/Id'
+        fromNodeId:
+          $ref: '#/components/schemas/Id'
+        condition:
+          type: string
+        toNodeId:
+          description: '`null` = cierra el camino.'
+          oneOf:
+            - $ref: '#/components/schemas/Id'
+            - type: 'null'
+    CalendarDay:
+      type: object
+      additionalProperties: false
+      required: [id, date, kind, scope, description]
+      properties:
+        id:
+          $ref: '#/components/schemas/Id'
+        date:
+          type: string
+          format: date
+        kind:
+          type: string
+          enum: [FERIADO, FERIA, ASUETO, INHABIL_MANUAL]
+        scope:
+          type: string
+          enum: [NACIONAL, PROVINCIAL, DEPARTAMENTO, ORGANIZACION]
+        description:
+          type: string
+        legalReference:
+          type: string
+    CalendarView:
+      type: object
+      additionalProperties: false
+      required: [coverage, days]
+      properties:
+        coverage:
+          $ref: '#/components/schemas/CalendarCoverage'
+        days:
+          type: array
+          maxItems: 400
+          items:
+            $ref: '#/components/schemas/CalendarDay'
+
+    # ------------------------------------------------------------ Clientes
+    ClientFields:
+      type: object
+      required: [personType, fullNameOrCompany]
+      properties:
+        personType:
+          type: string
+          enum: [HUMANA, JURIDICA]
+        fullNameOrCompany:
+          type: string
+          minLength: 2
+          maxLength: 200
+        taxId:
+          type: string
+          pattern: '^[0-9]{7,11}$'
+          description: DNI o CUIT, sin guiones.
+        phone:
+          type: string
+          maxLength: 30
+        email:
+          type: string
+          format: email
+          maxLength: 254
+    ClientInput:
+      allOf:
+        - $ref: '#/components/schemas/ClientFields'
+      unevaluatedProperties: false
+    Client:
+      allOf:
+        - $ref: '#/components/schemas/ClientFields'
+        - type: object
+          required: [id, isActiveForPlan]
+          properties:
+            id:
+              $ref: '#/components/schemas/Id'
+            isActiveForPlan:
+              type: boolean
+              description: Si cuenta en el límite de clientes activos.
+      unevaluatedProperties: false
+    ClientPage:
+      type: object
+      additionalProperties: false
+      required: [items, meta]
+      properties:
+        items:
+          type: array
+          maxItems: 100
+          items:
+            $ref: '#/components/schemas/Client'
+        meta:
+          $ref: '#/components/schemas/PageMeta'
+
+    # ------------------------------------------------------------ Expedientes
+    InProgressStep:
+      type: object
+      additionalProperties: false
+      required: [nodeId]
+      description: Hito actual de un expediente en curso. Se carga el inicio del cómputo o, si no se conoce, el vencimiento a mano con motivo.
+      properties:
+        nodeId:
+          $ref: '#/components/schemas/Id'
+        startDate:
+          type: string
+          format: date
+        startAt:
+          type: string
+          format: date-time
+        notificationType:
+          $ref: '#/components/schemas/NotificationType'
+        manualDue:
+          $ref: '#/components/schemas/ManualDue'
+    ManualDue:
+      type: object
+      additionalProperties: false
+      required: [ordinaryLimitAt, reason]
+      properties:
+        ordinaryLimitAt:
+          type: string
+          format: date-time
+        graceLimitAt:
+          type: string
+          format: date-time
+        reason:
+          $ref: '#/components/schemas/Reason'
+    CaseCreate:
+      type: object
+      additionalProperties: false
+      required: [clientId, caseTitle, jurisdictionId, departmentId, representedRole, startStage]
+      properties:
+        clientId:
+          $ref: '#/components/schemas/Id'
+        caseTitle:
+          type: string
+          minLength: 3
+          maxLength: 300
+        caseNumber:
+          type: string
+          maxLength: 60
+        receptoriaNumber:
+          type: string
+          maxLength: 60
+        jurisdictionId:
+          $ref: '#/components/schemas/Id'
+        departmentId:
+          $ref: '#/components/schemas/Id'
+        courtId:
+          $ref: '#/components/schemas/Id'
+        representedRole:
+          $ref: '#/components/schemas/RepresentedRole'
+        startStage:
+          type: string
+          enum: [PREJUDICIAL, JUDICIAL]
+          description: '`JUDICIAL` exige `courtId`.'
+        claimFiledOn:
+          type: string
+          format: date
+        inProgress:
+          type: object
+          additionalProperties: false
+          required: [currentSteps]
+          properties:
+            currentSteps:
+              type: array
+              minItems: 1
+              maxItems: 20
+              items:
+                $ref: '#/components/schemas/InProgressStep'
+    CaseUpdate:
+      type: object
+      additionalProperties: false
+      minProperties: 1
+      properties:
+        caseTitle:
+          type: string
+          minLength: 3
+          maxLength: 300
+        caseNumber:
+          type: string
+          maxLength: 60
+        receptoriaNumber:
+          type: string
+          maxLength: 60
+        courtId:
+          $ref: '#/components/schemas/Id'
+        responsibleUserId:
+          $ref: '#/components/schemas/Id'
+        currentStatus:
+          type: string
+          enum: [ACTIVO, PAUSADO]
+    CaseSummary:
+      type: object
+      additionalProperties: false
+      required: [id, caseTitle, clientId, clientName, representedRole, currentStatus]
+      properties:
+        id:
+          $ref: '#/components/schemas/Id'
+        caseTitle:
+          type: string
+        caseNumber:
+          type: string
+        clientId:
+          $ref: '#/components/schemas/Id'
+        clientName:
+          type: string
+        courtName:
+          type: string
+        representedRole:
+          $ref: '#/components/schemas/RepresentedRole'
+        currentStatus:
+          $ref: '#/components/schemas/CaseStatus'
+        currentMilestones:
+          type: array
+          maxItems: 20
+          items:
+            type: string
+        nextDueAt:
+          type: string
+          format: date-time
+    Case:
+      type: object
+      additionalProperties: false
+      required: [id, caseTitle, clientId, jurisdictionId, departmentId, representedRole, currentStatus, loadedInProgress]
+      properties:
+        id:
+          $ref: '#/components/schemas/Id'
+        caseTitle:
+          type: string
+        caseNumber:
+          type: string
+        receptoriaNumber:
+          type: string
+        clientId:
+          $ref: '#/components/schemas/Id'
+        responsibleUserId:
+          $ref: '#/components/schemas/Id'
+        jurisdictionId:
+          $ref: '#/components/schemas/Id'
+        departmentId:
+          $ref: '#/components/schemas/Id'
+        courtId:
+          $ref: '#/components/schemas/Id'
+        representedRole:
+          $ref: '#/components/schemas/RepresentedRole'
+        currentStatus:
+          $ref: '#/components/schemas/CaseStatus'
+        prejudicialFlowVersionId:
+          $ref: '#/components/schemas/Id'
+        judicialFlowVersionId:
+          $ref: '#/components/schemas/Id'
+        proceduralRegimeCode:
+          type: string
+        regimeSource:
+          type: string
+          enum: [TRIBUNAL, DEPARTAMENTO_Y_FECHA]
+        regimeWarning:
+          type: string
+          description: Presente si el régimen del tribunal no coincide con el del departamento y la fecha.
+        onlyStandaloneSteps:
+          type: boolean
+          description: '`true` si el régimen no tiene flujo publicado.'
+        claimFiledOn:
+          type: string
+          format: date
+        loadedInProgress:
+          type: boolean
+        closedOn:
+          type: string
+          format: date
+        closedReason:
+          type: string
+          enum: [SENTENCIA, ACUERDO, DESISTIMIENTO, OTRO]
+    CasePage:
+      type: object
+      additionalProperties: false
+      required: [items, meta]
+      properties:
+        items:
+          type: array
+          maxItems: 100
+          items:
+            $ref: '#/components/schemas/CaseSummary'
+        meta:
+          $ref: '#/components/schemas/PageMeta'
+    PartyFields:
+      type: object
+      required: [partyRole, name]
+      properties:
+        partyRole:
+          type: string
+          enum: [ACTORA, DEMANDADA, TERCERO]
+        name:
+          type: string
+          minLength: 2
+          maxLength: 200
+        taxId:
+          type: string
+          pattern: '^[0-9]{7,11}$'
+        counselName:
+          type: string
+          maxLength: 200
+    PartyInput:
+      allOf:
+        - $ref: '#/components/schemas/PartyFields'
+      unevaluatedProperties: false
+    Party:
+      allOf:
+        - $ref: '#/components/schemas/PartyFields'
+        - type: object
+          required: [id]
+          properties:
+            id:
+              $ref: '#/components/schemas/Id'
+      unevaluatedProperties: false
+    SuspensionFields:
+      type: object
+      required: [startsOn, endsOn, reason]
+      properties:
+        startsOn:
+          type: string
+          format: date
+        endsOn:
+          type: string
+          format: date
+          description: Igual o posterior a `startsOn`.
+        reason:
+          type: string
+          enum: [ACUERDO_DE_PARTES, RESOLUCION_DEL_TRIBUNAL, OTRO]
+        legalReference:
+          type: string
+          maxLength: 300
+    SuspensionInput:
+      allOf:
+        - $ref: '#/components/schemas/SuspensionFields'
+      unevaluatedProperties: false
+    Suspension:
+      allOf:
+        - $ref: '#/components/schemas/SuspensionFields'
+        - type: object
+          required: [id]
+          properties:
+            id:
+              $ref: '#/components/schemas/Id'
+      unevaluatedProperties: false
+    Roadmap:
+      type: object
+      additionalProperties: false
+      required: [nodes, transitions]
+      properties:
+        nodes:
+          type: array
+          maxItems: 500
+          items:
+            type: object
+            additionalProperties: false
+            required: [nodeId, code, name, phase, perspective, state]
+            properties:
+              nodeId:
+                $ref: '#/components/schemas/Id'
+              code:
+                type: string
+              name:
+                type: string
+              phase:
+                type: string
+              perspective:
+                $ref: '#/components/schemas/Perspective'
+              state:
+                type: string
+                enum: [FUTURO, ACTUAL, VENCIDO, COMPLETADO, SALTEADO, NO_CUMPLIDO, ANULADO, ANTERIOR_A_LA_CARGA]
+              stepIds:
+                type: array
+                maxItems: 50
+                items:
+                  $ref: '#/components/schemas/Id'
+        transitions:
+          type: array
+          maxItems: 2000
+          items:
+            $ref: '#/components/schemas/FlowTransition'
+    HistoryEvent:
+      type: object
+      additionalProperties: false
+      required: [occurredAt, action, actorName]
+      properties:
+        occurredAt:
+          type: string
+          format: date-time
+        action:
+          type: string
+          description: Acción de `audit_events`, ej. `PLAZO_EDITADO`.
+        actorName:
+          type: string
+        stepId:
+          $ref: '#/components/schemas/Id'
+        reason:
+          type: string
+        changes:
+          type: object
+          description: Solo los campos de la lista permitida para ese tipo de entidad.
+    HistoryPage:
+      type: object
+      additionalProperties: false
+      required: [items, meta]
+      properties:
+        items:
+          type: array
+          maxItems: 100
+          items:
+            $ref: '#/components/schemas/HistoryEvent'
+        meta:
+          $ref: '#/components/schemas/PageMeta'
+
+    # ------------------------------------------------------------ Pasos y motor
+    DeadlineResult:
+      type: object
+      additionalProperties: false
+      required: [calculationStatus, calculatedWithProvisionalCalendar, calendarIncomplete, warnings]
+      properties:
+        calculationStatus:
+          $ref: '#/components/schemas/CalculationStatus'
+        nominalDueDate:
+          type: string
+          format: date
+          description: Fecha de alerta.
+        effectiveDueDate:
+          type: string
+          format: date
+        ordinaryLimitAt:
+          type: string
+          format: date-time
+        graceLimitAt:
+          type: string
+          format: date-time
+        calculatedWithProvisionalCalendar:
+          type: boolean
+        calendarIncomplete:
+          type: boolean
+        warnings:
+          type: array
+          maxItems: 20
+          items:
+            type: string
+            description: Ej. `FECHA_EN_DIA_INHABIL`.
+        calendarVersion:
+          type: integer
+    Step:
+      type: object
+      additionalProperties: false
+      required: [id, caseId, title, status, responsibleRole, perspective, termType, termValue, appliesGracePeriod, deadlineLimitType, extensionDays, loadedInProgress, deadline]
+      properties:
+        id:
+          $ref: '#/components/schemas/Id'
+        caseId:
+          $ref: '#/components/schemas/Id'
+        nodeId:
+          description: '`null` = plazo suelto.'
+          oneOf:
+            - $ref: '#/components/schemas/Id'
+            - type: 'null'
+        title:
+          type: string
+          description: Nombre del hito, o título del plazo suelto.
+        status:
+          $ref: '#/components/schemas/StepStatus'
+        statusReason:
+          type: string
+        isOverdue:
+          type: boolean
+          description: Derivado (pendiente con el límite ya pasado); no se guarda.
+        responsibleRole:
+          $ref: '#/components/schemas/ResponsibleRole'
+        perspective:
+          $ref: '#/components/schemas/Perspective'
+        originStepId:
+          $ref: '#/components/schemas/Id'
+        relatedStepId:
+          $ref: '#/components/schemas/Id'
+        termType:
+          $ref: '#/components/schemas/TermType'
+        termValue:
+          type: integer
+        termOverrideReason:
+          type: string
+        appliesGracePeriod:
+          type: boolean
+        deadlineLimitType:
+          $ref: '#/components/schemas/DeadlineLimitType'
+        extensionDays:
+          type: integer
+        notificationType:
+          $ref: '#/components/schemas/NotificationType'
+        startDate:
+          type: string
+          format: date
+        startAt:
+          type: string
+          format: date-time
+        deadline:
+          description: '`null` mientras no se cargue el inicio del cómputo.'
+          oneOf:
+            - $ref: '#/components/schemas/DeadlineResult'
+            - type: 'null'
+        loadedInProgress:
+          type: boolean
+        filedAt:
+          type: string
+          format: date-time
+        completedAt:
+          type: string
+          format: date-time
+    ChecklistItem:
+      type: object
+      additionalProperties: false
+      required: [id, kind, text, done]
+      properties:
+        id:
+          $ref: '#/components/schemas/Id'
+        kind:
+          type: string
+          enum: [TAREA, DOCUMENTACION]
+        text:
+          type: string
+        done:
+          type: boolean
+    StepDetail:
+      type: object
+      additionalProperties: false
+      required: [step, checklist, availableTransitions]
+      properties:
+        step:
+          $ref: '#/components/schemas/Step'
+        checklist:
+          type: array
+          maxItems: 100
+          items:
+            $ref: '#/components/schemas/ChecklistItem'
+        availableTransitions:
+          type: array
+          maxItems: 50
+          items:
+            $ref: '#/components/schemas/FlowTransition'
+    StepTransitionResult:
+      type: object
+      additionalProperties: false
+      required: [step, openedSteps]
+      properties:
+        step:
+          $ref: '#/components/schemas/Step'
+        openedSteps:
+          type: array
+          maxItems: 20
+          items:
+            $ref: '#/components/schemas/Step'
+    StepRevertResult:
+      type: object
+      additionalProperties: false
+      required: [reopenedStep, annulledSteps]
+      properties:
+        reopenedStep:
+          $ref: '#/components/schemas/Step'
+        annulledSteps:
+          type: array
+          maxItems: 20
+          items:
+            $ref: '#/components/schemas/Step'
+    DeadlineUpdate:
+      type: object
+      additionalProperties: false
+      properties:
+        startDate:
+          type: string
+          format: date
+        startAt:
+          type: string
+          format: date-time
+        notificationType:
+          $ref: '#/components/schemas/NotificationType'
+        termValue:
+          type: integer
+          minimum: 0
+          maximum: 720
+        termOverrideReason:
+          $ref: '#/components/schemas/Reason'
+        appliesGracePeriod:
+          type: boolean
+        extensionDays:
+          type: integer
+          minimum: 0
+          maximum: 30
+        extensionReason:
+          $ref: '#/components/schemas/Reason'
+        manualDue:
+          $ref: '#/components/schemas/ManualDue'
+    StandaloneStepCreate:
+      type: object
+      additionalProperties: false
+      required: [title, termType, termValue, appliesGracePeriod]
+      properties:
+        title:
+          type: string
+          minLength: 3
+          maxLength: 200
+          description: No incluir datos de salud ni otros datos sensibles.
+        termType:
+          $ref: '#/components/schemas/TermType'
+        termValue:
+          type: integer
+          minimum: 0
+          maximum: 720
+        appliesGracePeriod:
+          type: boolean
+        deadlineLimitType:
+          $ref: '#/components/schemas/DeadlineLimitType'
+        responsibleRole:
+          $ref: '#/components/schemas/ResponsibleRole'
+        startDate:
+          type: string
+          format: date
+        startAt:
+          type: string
+          format: date-time
+        notificationType:
+          $ref: '#/components/schemas/NotificationType'
+        relatedStepId:
+          $ref: '#/components/schemas/Id'
+    DeadlineCalculationRequest:
+      type: object
+      additionalProperties: false
+      required: [caseId, termType, termValue, appliesGracePeriod]
+      properties:
+        caseId:
+          $ref: '#/components/schemas/Id'
+        termType:
+          $ref: '#/components/schemas/TermType'
+        termValue:
+          type: integer
+          minimum: 0
+          maximum: 720
+        appliesGracePeriod:
+          type: boolean
+        deadlineLimitType:
+          $ref: '#/components/schemas/DeadlineLimitType'
+        startDate:
+          type: string
+          format: date
+        startAt:
+          type: string
+          format: date-time
+        extensionDays:
+          type: integer
+          minimum: 0
+          maximum: 30
+    DeadlineCalculationResult:
+      type: object
+      additionalProperties: false
+      required: [result, computedDays]
+      properties:
+        result:
+          $ref: '#/components/schemas/DeadlineResult'
+        computedDays:
+          type: array
+          maxItems: 800
+          description: Días recorridos por el cómputo, con el motivo de los que se saltearon.
+          items:
+            type: object
+            additionalProperties: false
+            required: [date, counted]
+            properties:
+              date:
+                type: string
+                format: date
+              counted:
+                type: boolean
+              skippedReason:
+                type: string
+                description: Ej. "Feriado nacional", "Feria judicial", "Suspensión del expediente".
+
+    # ------------------------------------------------------------ Alertas
+    DashboardItem:
+      type: object
+      additionalProperties: false
+      required: [level, stepId, caseId, caseTitle, clientName, actionTitle, limitAt]
+      properties:
+        level:
+          $ref: '#/components/schemas/AlertLevel'
+        stepId:
+          $ref: '#/components/schemas/Id'
+        caseId:
+          $ref: '#/components/schemas/Id'
+        caseTitle:
+          type: string
+        caseNumber:
+          type: string
+        clientName:
+          type: string
+        actionTitle:
+          type: string
+          description: Ej. "Contestación de la demanda".
+        limitAt:
+          type: string
+          format: date-time
+        graceLimitAt:
+          type: string
+          format: date-time
+        suggestedAction:
+          type: string
+          description: En oportunidades, ej. "Pedir que se tenga por no contestada la demanda".
+        approximate:
+          type: boolean
+          description: Calendario provisorio o incompleto.
+    Dashboard:
+      type: object
+      additionalProperties: false
+      required: [overdueUnfulfilled, lastMoment, red, yellow, opportunities, calendarStatus]
+      properties:
+        overdueUnfulfilled:
+          type: array
+          maxItems: 500
+          items:
+            $ref: '#/components/schemas/DashboardItem'
+        lastMoment:
+          type: array
+          maxItems: 500
+          items:
+            $ref: '#/components/schemas/DashboardItem'
+        red:
+          type: array
+          maxItems: 500
+          items:
+            $ref: '#/components/schemas/DashboardItem'
+        yellow:
+          type: array
+          maxItems: 500
+          items:
+            $ref: '#/components/schemas/DashboardItem'
+        opportunities:
+          type: array
+          maxItems: 500
+          items:
+            $ref: '#/components/schemas/DashboardItem'
+        calendarStatus:
+          $ref: '#/components/schemas/CalendarCoverage'
+
+    # ------------------------------------------------------------ Suscripción y facturación
+    Plan:
+      type: object
+      additionalProperties: false
+      required: [id, code, name, family, tierRank, includedSeats, maxDevicesPerUser, billingPeriod, priceAmount, currency, trialDays]
+      properties:
+        id:
+          $ref: '#/components/schemas/Id'
+        code:
+          type: string
+        name:
+          type: string
+        family:
+          type: string
+          enum: [INDIVIDUAL, ESTUDIO]
+        tierRank:
+          type: integer
+        maxActiveClients:
+          description: '`null` = sin límite.'
+          oneOf:
+            - type: integer
+            - type: 'null'
+        includedSeats:
+          type: integer
+        maxSeats:
+          oneOf:
+            - type: integer
+            - type: 'null'
+        extraSeatPriceAmount:
+          type: string
+          pattern: '^[0-9]+\.[0-9]{2}$'
+        maxDevicesPerUser:
+          type: integer
+        billingPeriod:
+          type: string
+          enum: [MENSUAL, ANUAL]
+        priceAmount:
+          type: string
+          pattern: '^[0-9]+\.[0-9]{2}$'
+          description: Precio final con impuestos incluidos. Decimal como texto para no perder precisión.
+        currency:
+          type: string
+          enum: [ARS]
+        trialDays:
+          type: integer
+    PlanSelection:
+      type: object
+      additionalProperties: false
+      required: [planId]
+      properties:
+        planId:
+          $ref: '#/components/schemas/Id'
+        seats:
+          type: integer
+          minimum: 1
+          maximum: 500
+          description: Solo en planes `ESTUDIO`.
+    PlanChangePreview:
+      type: object
+      additionalProperties: false
+      required: [effective, allowed]
+      properties:
+        effective:
+          type: string
+          enum: [INMEDIATO, PROXIMO_PERIODO]
+        allowed:
+          type: boolean
+        notAllowedReason:
+          type: string
+        amountDueNow:
+          type: string
+          pattern: '^[0-9]+\.[0-9]{2}$'
+        effectiveAt:
+          type: string
+          format: date-time
+    Subscription:
+      type: object
+      additionalProperties: false
+      required: [status, plan, seats, usage, cancelAtPeriodEnd]
+      properties:
+        status:
+          type: string
+          enum: [PRUEBA, ACTIVA, EN_MORA, SOLO_LECTURA, CANCELADA]
+        plan:
+          $ref: '#/components/schemas/Plan'
+        scheduledPlan:
+          $ref: '#/components/schemas/Plan'
+        seats:
+          type: integer
+        trialEndsAt:
+          type: string
+          format: date-time
+        currentPeriodEnd:
+          type: string
+          format: date-time
+        cancelAtPeriodEnd:
+          type: boolean
+        readOnlyUntil:
+          type: string
+          format: date-time
+        deletionScheduledFor:
+          type: string
+          format: date
+        withdrawalAvailableUntil:
+          type: string
+          format: date-time
+          description: Fin del plazo de arrepentimiento; ausente si ya venció.
+        usage:
+          type: object
+          additionalProperties: false
+          required: [activeClients, seatsUsed]
+          properties:
+            activeClients:
+              type: integer
+            maxActiveClients:
+              oneOf:
+                - type: integer
+                - type: 'null'
+            seatsUsed:
+              type: integer
+    CancellationReceipt:
+      type: object
+      additionalProperties: false
+      required: [ticket, accessUntil, readOnlyUntil, deletionScheduledFor]
+      properties:
+        ticket:
+          type: string
+          description: Número de trámite.
+        accessUntil:
+          type: string
+          format: date-time
+        readOnlyUntil:
+          type: string
+          format: date-time
+        deletionScheduledFor:
+          type: string
+          format: date
+        refundAmount:
+          type: string
+          pattern: '^[0-9]+\.[0-9]{2}$'
+    BillingProfile:
+      type: object
+      additionalProperties: false
+      required: [taxIdType, taxId, legalName, vatCondition, fiscalAddress, billingEmail]
+      properties:
+        taxIdType:
+          type: string
+          enum: [CUIT, DNI]
+        taxId:
+          type: string
+          pattern: '^[0-9]{7,11}$'
+        legalName:
+          type: string
+          minLength: 2
+          maxLength: 200
+        vatCondition:
+          type: string
+          enum: [RESPONSABLE_INSCRIPTO, MONOTRIBUTO, EXENTO, CONSUMIDOR_FINAL]
+        fiscalAddress:
+          type: string
+          minLength: 5
+          maxLength: 300
+        billingEmail:
+          type: string
+          format: email
+          maxLength: 254
+    Invoice:
+      type: object
+      additionalProperties: false
+      required: [id, voucherKind, voucherLetter, pointOfSale, issueDate, totalAmount, currency, status]
+      properties:
+        id:
+          $ref: '#/components/schemas/Id'
+        voucherKind:
+          type: string
+          enum: [FACTURA, NOTA_DE_CREDITO]
+        voucherLetter:
+          type: string
+          enum: [A, B, C]
+        pointOfSale:
+          type: integer
+        voucherNumber:
+          type: integer
+        issueDate:
+          type: string
+          format: date
+        servicePeriodFrom:
+          type: string
+          format: date
+        servicePeriodTo:
+          type: string
+          format: date
+        totalAmount:
+          type: string
+          pattern: '^[0-9]+\.[0-9]{2}$'
+        currency:
+          type: string
+          enum: [ARS]
+        status:
+          type: string
+          enum: [PENDIENTE, AUTORIZADA, RECHAZADA, ERROR]
+        cae:
+          type: string
+        caeDueDate:
+          type: string
+          format: date
+    InvoicePage:
+      type: object
+      additionalProperties: false
+      required: [items, meta]
+      properties:
+        items:
+          type: array
+          maxItems: 100
+          items:
+            $ref: '#/components/schemas/Invoice'
+        meta:
+          $ref: '#/components/schemas/PageMeta'
+    Export:
+      type: object
+      additionalProperties: false
+      required: [id, status, format, requestedAt]
+      properties:
+        id:
+          $ref: '#/components/schemas/Id'
+        status:
+          type: string
+          enum: [EN_PREPARACION, LISTA, VENCIDA, ERROR]
+        format:
+          type: string
+          enum: [JSON, XLSX]
+        requestedAt:
+          type: string
+          format: date-time
+        downloadUrl:
+          type: string
+          format: uri
+          description: URL firmada, de un solo uso, válida por 24 horas. Solo con `LISTA`.
+        expiresAt:
+          type: string
+          format: date-time
+
+    # ------------------------------------------------------------ Back-office
+    CalendarChangeSet:
+      type: object
+      additionalProperties: false
+      required: [jurisdictionId, changes, reason]
+      properties:
+        jurisdictionId:
+          $ref: '#/components/schemas/Id'
+        reason:
+          $ref: '#/components/schemas/Reason'
+        confirmDelays:
+          type: boolean
+          default: false
+          description: Obligatorio en `true` si algún vencimiento pendiente se atrasa.
+        changes:
+          type: array
+          minItems: 1
+          maxItems: 400
+          items:
+            type: object
+            additionalProperties: false
+            required: [action, date, kind, scope]
+            properties:
+              action:
+                type: string
+                enum: [AGREGAR, QUITAR]
+              date:
+                type: string
+                format: date
+              kind:
+                type: string
+                enum: [FERIADO, FERIA, ASUETO]
+              scope:
+                type: string
+                enum: [NACIONAL, PROVINCIAL, DEPARTAMENTO]
+              departmentId:
+                $ref: '#/components/schemas/Id'
+              description:
+                type: string
+                maxLength: 200
+              legalReference:
+                type: string
+                maxLength: 300
+                description: Acordada o resolución. Obligatoria para `ASUETO` y `FERIA`.
+    CalendarChangeImpact:
+      type: object
+      additionalProperties: false
+      required: [affectedSteps, delayedSteps, advancedSteps, affectedOrganizations]
+      properties:
+        affectedSteps:
+          type: integer
+        delayedSteps:
+          type: integer
+          description: Pasos cuyo vencimiento se atrasa (el caso más peligroso).
+        advancedSteps:
+          type: integer
+        affectedOrganizations:
+          type: integer
+        calendarVersion:
+          type: integer
+          description: Solo al aplicar.
+    CalendarCoverage:
+      type: object
+      additionalProperties: false
+      required: [jurisdictionId, coveredUntil, status]
+      properties:
+        jurisdictionId:
+          $ref: '#/components/schemas/Id'
+        coveredUntil:
+          type: string
+          format: date
+        status:
+          type: string
+          enum: [PROVISORIO, OFICIAL]
+        calendarVersion:
+          type: integer
+          readOnly: true
+        validatedByUserId:
+          $ref: '#/components/schemas/Id'
+          description: Obligatorio para `OFICIAL`; tiene que ser un admin distinto de quien hace el cambio.
+        validatedAt:
+          type: string
+          format: date-time
+          readOnly: true
+    FlowImport:
+      type: object
+      additionalProperties: false
+      required: [id, status, createdAt]
+      properties:
+        id:
+          $ref: '#/components/schemas/Id'
+        status:
+          type: string
+          enum: [VALIDA, CON_ERRORES, PUBLICADA]
+        createdAt:
+          type: string
+          format: date-time
+        nodeCount:
+          type: integer
+        transitionCount:
+          type: integer
+        errors:
+          type: array
+          maxItems: 1000
+          items:
+            type: object
+            additionalProperties: false
+            required: [sheet, message]
+            properties:
+              sheet:
+                type: string
+              row:
+                type: integer
+              message:
+                type: string
+    FlowVersionSummary:
+      type: object
+      additionalProperties: false
+      required: [id, flowId, versionNumber, status, publishedAt, approvedByLegal, sourceChecksum]
+      properties:
+        id:
+          $ref: '#/components/schemas/Id'
+        flowId:
+          $ref: '#/components/schemas/Id'
+        versionNumber:
+          type: integer
+        status:
+          type: string
+          enum: [BORRADOR, PUBLICADA, RETIRADA]
+        publishedAt:
+          type: string
+          format: date-time
+        approvedByLegal:
+          type: string
+        sourceChecksum:
+          type: string
+          pattern: '^[a-f0-9]{64}$'
+          description: SHA-256 de la planilla importada.
+    JurisdictionSchedule:
+      type: object
+      additionalProperties: false
+      required: [jurisdictionId, validFrom, openingTime, closingTime, graceEndTime, legalReference]
+      properties:
+        id:
+          $ref: '#/components/schemas/Id'
+          readOnly: true
+        jurisdictionId:
+          $ref: '#/components/schemas/Id'
+        validFrom:
+          type: string
+          format: date
+        openingTime:
+          type: string
+          pattern: '^([01][0-9]|2[0-3]):[0-5][0-9]$'
+        closingTime:
+          type: string
+          pattern: '^([01][0-9]|2[0-3]):[0-5][0-9]$'
+        graceEndTime:
+          type: string
+          pattern: '^([01][0-9]|2[0-3]):[0-5][0-9]$'
+        validTo:
+          type: string
+          format: date
+        legalReference:
+          type: string
+          minLength: 3
+          maxLength: 300
+    DepartmentRegime:
+      type: object
+      additionalProperties: false
+      required: [departmentId, proceduralRegimeCode, validFrom]
+      properties:
+        id:
+          $ref: '#/components/schemas/Id'
+          readOnly: true
+        departmentId:
+          $ref: '#/components/schemas/Id'
+        proceduralRegimeCode:
+          type: string
+          enum: [PBA_LAB_LEY_11653, PBA_LAB_LEY_15057]
+        validFrom:
+          type: string
+          format: date
+        validTo:
+          type: string
+          format: date

@@ -9,7 +9,6 @@
 * **Cada caja es un hito** de la hoja `Nodos`: muestra el ID, el nombre, quién debe actuar y el plazo.
 * **Cada flecha es un camino** de la hoja `Transiciones`, rotulado con su condición de salida.
 * **Color de la caja según el responsable:** celeste = Actora; naranja = Demandada; gris = Tribunal; violeta = Ambas partes.
-* **Borde punteado:** el tipo de plazo todavía no está soportado por el motor (días hábiles de la LCT, años, fecha fijada).
 * **Borde grueso:** hito inicial o hito final.
 * **"Se abren en paralelo"** (amarillo): esa condición abre varios hitos a la vez; por ejemplo, la prescripción corre mientras avanza el reclamo.
 * **"Fin de este camino"** (gris claro): el camino paralelo termina sin abrir otro hito.
@@ -53,11 +52,11 @@ flowchart LR
 flowchart TD
   subgraph F_0["Previa"]
     LAB_010["INICIO - <b>LAB_010</b> Extinción del vínculo o injuria laboral<br/>Responsable: Actora<br/>Sin plazo"]:::actora
-    LAB_015["<b>LAB_015</b> Control de prescripción de la acción<br/>Responsable: Actora<br/>2 años - tipo pendiente"]:::actora
+    LAB_015["<b>LAB_015</b> Control de prescripción de la acción<br/>Responsable: Actora<br/>2 años"]:::actora
     LAB_016["<b>LAB_016</b> Entrega de certificados de trabajo<br/>Responsable: Demandada<br/>30 días corridos"]:::demandada
-    LAB_017["<b>LAB_017</b> Intimación de entrega de certificados<br/>Responsable: Demandada<br/>2 días hábiles (LCT) - tipo pendiente"]:::demandada
-    LAB_020["<b>LAB_020</b> Pago de la liquidación final e indemnizaciones<br/>Responsable: Demandada<br/>4 días hábiles (LCT) - tipo pendiente"]:::demandada
-    LAB_030["<b>LAB_030</b> Intimación telegráfica del trabajador<br/>Responsable: Demandada<br/>2 días hábiles (LCT) - tipo pendiente"]:::demandada
+    LAB_017["<b>LAB_017</b> Intimación de entrega de certificados<br/>Responsable: Demandada<br/>2 días hábiles administrativos"]:::demandada
+    LAB_020["<b>LAB_020</b> Pago de la liquidación final e indemnizaciones<br/>Responsable: Demandada<br/>4 días hábiles administrativos"]:::demandada
+    LAB_030["<b>LAB_030</b> Intimación telegráfica del trabajador<br/>Responsable: Demandada<br/>2 días hábiles administrativos"]:::demandada
     LAB_035["<b>LAB_035</b> Comunicación del despido indirecto<br/>Responsable: Actora<br/>Sin plazo"]:::actora
     LAB_040["<b>LAB_040</b> Instancia de conciliación laboral previa<br/>Responsable: Actora<br/>Sin plazo"]:::actora
   end
@@ -92,10 +91,6 @@ flowchart TD
   EXT_LAB_050_destino["LAB_050 Interposición de la demanda<br/>(ver Demanda y contestación)"]:::externo
   LAB_040 -->|"Fracaso de la conciliación o instancia no exigida"| EXT_LAB_050_destino
   style LAB_010 stroke-width:3px
-  style LAB_015 stroke-dasharray:6 4
-  style LAB_017 stroke-dasharray:6 4
-  style LAB_020 stroke-dasharray:6 4
-  style LAB_030 stroke-dasharray:6 4
   classDef actora fill:#DCE9F9,stroke:#1F4E79,color:#000
   classDef demandada fill:#FBE3D6,stroke:#C55A11,color:#000
   classDef tribunal fill:#E7E6E6,stroke:#595959,color:#000
@@ -165,7 +160,7 @@ flowchart TD
   end
   subgraph F_1["Vista de causa"]
     LAB_200["<b>LAB_200</b> Fijación de la audiencia de vista de causa<br/>Responsable: Tribunal<br/>Sin plazo"]:::tribunal
-    LAB_210["<b>LAB_210</b> Audiencia de vista de causa<br/>Responsable: Ambas partes<br/>Fecha fijada por el tribunal - tipo pendiente"]:::ambas
+    LAB_210["<b>LAB_210</b> Audiencia de vista de causa<br/>Responsable: Ambas partes<br/>Fecha y hora fijadas por el tribunal"]:::ambas
   end
   EXT_LAB_075_origen["LAB_075 Demanda no contestada<br/>(ver Demanda y contestación)"]:::externo
   EXT_LAB_075_origen -.->|"Se tiene por no contestada la demanda"| LAB_100
@@ -203,7 +198,6 @@ flowchart TD
   LAB_210 -->|"Audiencia suspendida o reprogramada"| LAB_200
   EXT_LAB_900_destino["LAB_900 Acuerdo conciliatorio y homologación<br/>(ver Ejecución, acuerdo y cierre)"]:::externo
   LAB_210 -->|"Acuerdo conciliatorio en la audiencia"| EXT_LAB_900_destino
-  style LAB_210 stroke-dasharray:6 4
   classDef actora fill:#DCE9F9,stroke:#1F4E79,color:#000
   classDef demandada fill:#FBE3D6,stroke:#C55A11,color:#000
   classDef tribunal fill:#E7E6E6,stroke:#595959,color:#000

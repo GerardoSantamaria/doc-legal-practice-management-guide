@@ -6,7 +6,8 @@ from openpyxl.formatting.rule import FormulaRule
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from openpyxl.worksheet.datavalidation import DataValidation
 
-from datos import DUDAS, ESTADOS, FASES, FLUJO, NODOS, PENDIENTES, PLAZO_TIPOS, ROLES, TRANSICIONES
+from datos import (CON_GRACIA, CON_VALOR_CERO, DUDAS, ESTADOS, FASES, FLUJO, NODOS, PLAZO_TIPOS, ROLES,
+                   TRANSICIONES)
 
 CIERRA = "CIERRA_CAMINO"
 SALIDA_XLSX = sys.argv[1]
@@ -32,10 +33,11 @@ def validar():
             assert not salidas[nid], f"Final con salidas {nid}"
         else:
             assert salidas[nid], f"Sin salidas {nid}"
-        if tipo in ("SIN_PLAZO", "FECHA_FIJADA"):
-            assert valor == 0 and gracia == "NO", nid
+        if tipo in CON_VALOR_CERO:
+            assert valor == 0, nid
         else:
             assert valor > 0, nid
+        assert gracia == "NO" or tipo in CON_GRACIA, nid
     vistos, cola = {iniciales[0]}, deque(iniciales)
     while cola:
         for d in salidas[cola.popleft()]:
@@ -50,7 +52,6 @@ HEADER_FILL = PatternFill("solid", fgColor="1F3864")
 HEADER_FONT = Font(bold=True, color="FFFFFF")
 CTRL_FILL = PatternFill("solid", fgColor="D9D9D9")
 ERROR_FILL = PatternFill("solid", fgColor="F8CBAD")
-PEND_FILL = PatternFill("solid", fgColor="FFE699")
 OK_FILL = PatternFill("solid", fgColor="C6EFCE")
 THIN = Side(style="thin", color="BFBFBF")
 BORDER = Border(left=THIN, right=THIN, top=THIN, bottom=THIN)
@@ -101,7 +102,7 @@ def hoja_instrucciones(wb):
         ("Reglas de carga", True),
         ("1. Plazo_Tipo SIN_PLAZO: el valor del plazo es 0 y Aplica_Gracia es NO (etapas que dependen del tribunal).", False),
         ("2. Plazo_Tipo FECHA_FIJADA (audiencias): el valor es 0; el abogado carga la fecha y hora del acto en cada expediente.", False),
-        ("3. Los tipos HABILES_ADMINISTRATIVOS, ANIOS y FECHA_FIJADA están pendientes de soporte en el motor (se resaltan en amarillo).", False),
+        ("3. Aplica_Gracia = SI solo en HABILES_JUDICIALES, CORRIDOS, MESES y ANIOS. La hoja Valores explica cada tipo de plazo.", False),
         ("4. Checklist_Abogado y Documentacion_Requerida: separar cada ítem con punto y coma ( ; ).", False),
         ("5. Caminos en paralelo: si la misma condición de salida aparece en varias filas con distinto destino, se abren todos esos hitos a la vez (ej. la prescripción corre en paralelo con el reclamo).", False),
         ("6. Destino CIERRA_CAMINO: la fila cierra ese camino paralelo sin abrir otro hito. El destino nunca queda vacío.", False),
@@ -148,8 +149,6 @@ def hoja_valores(wb):
         ws.cell(row=i, column=7, value=t)
         c = ws.cell(row=i, column=8, value=d)
         c.alignment = WRAP
-        if t in PENDIENTES:
-            ws.cell(row=i, column=7).fill = PEND_FILL
     roles = [
         ("ACTORA", "Debe actuar la parte actora."),
         ("DEMANDADA", "Debe actuar la parte demandada."),
@@ -176,15 +175,17 @@ def hoja_nodos(wb):
             c = ws.cell(row=r, column=col, value=v)
             c.alignment = WRAP
             c.border = BORDER
+        cero = ",".join(f'G{r}="{t}"' for t in CON_VALOR_CERO)
+        con_gracia = ",".join(f'G{r}="{t}"' for t in CON_GRACIA)
         ws.cell(row=r, column=16, value=(
             f'=IF(A{r}="","",'
             f'IF(COUNTIF($A:$A,A{r})>1,"ID duplicado",'
             f'IF(AND(K{r}="NO",COUNTIF(Transiciones!$A:$A,A{r})=0),"Sin salidas",'
             f'IF(AND(K{r}="SI",COUNTIF(Transiciones!$A:$A,A{r})>0),"Final con salidas",'
             f'IF(AND(J{r}="NO",COUNTIF(Transiciones!$C:$C,A{r})=0),"Sin entradas",'
-            f'IF(AND(OR(G{r}="SIN_PLAZO",G{r}="FECHA_FIJADA"),F{r}<>0),"El plazo debe ser 0",'
-            f'IF(AND(OR(G{r}="SIN_PLAZO",G{r}="FECHA_FIJADA"),H{r}="SI"),"Sin plazo no lleva gracia",'
-            f'IF(AND(G{r}<>"SIN_PLAZO",G{r}<>"FECHA_FIJADA",F{r}=0),"Plazo 0: usar SIN_PLAZO",'
+            f'IF(AND(OR({cero}),F{r}<>0),"El plazo debe ser 0",'
+            f'IF(AND(H{r}="SI",NOT(OR({con_gracia}))),"Este tipo no lleva gracia",'
+            f'IF(AND(NOT(OR({cero})),F{r}=0),"Plazo 0: usar SIN_PLAZO",'
             f'"OK"))))))))'
         )).fill = CTRL_FILL
     ultima = 500
@@ -198,8 +199,6 @@ def hoja_nodos(wb):
                             showErrorMessage=True, error="Entero entre 0 y 365.")
     ws.add_data_validation(entero)
     entero.add(f"F2:F{ultima}")
-    pend = ",".join(f'G2="{p}"' for p in PENDIENTES)
-    ws.conditional_formatting.add(f"G2:G{ultima}", FormulaRule(formula=[f"OR({pend})"], fill=PEND_FILL))
     ws.conditional_formatting.add(f"P2:P{ultima}", FormulaRule(formula=['AND(P2<>"",P2<>"OK")'], fill=ERROR_FILL))
     ws.conditional_formatting.add(f"N2:N{ultima}", FormulaRule(formula=['N2="VALIDADO"'], fill=OK_FILL))
     ws.conditional_formatting.add(f"N2:N{ultima}", FormulaRule(formula=['N2="CORREGIR"'], fill=ERROR_FILL))

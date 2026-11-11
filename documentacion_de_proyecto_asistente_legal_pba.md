@@ -41,7 +41,8 @@ El desarrollo del MVP se guiará por las siguientes definiciones de producto:
 * **Navegación Flexible:** La app guiará paso a paso proponiendo el camino lógico siguiente según la matriz, pero siempre existirá la opción de **"Cambiar de etapa manualmente"** (saltar pasos o retroceder). El flujo sugerido no será una camisa de fuerza.
 
 ### E. Sistema de Alertas (V1)
-* **In-App Exclusivo:** En esta primera versión, todas las alertas (vencimientos del día, plazo de gracia, próximos a vencer) se visualizarán **únicamente dentro de la aplicación** (mediante un panel de control o *dashboard* y listados con indicadores visuales). El envío de correos electrónicos consolidados queda relegado para la V2.
+* **Dentro de la app:** todas las alertas (vencidos sin cumplir, vencimientos del día, plazo de gracia, próximos a vencer y oportunidades por plazos de la contraparte) se ven en el *dashboard*, con un semáforo cuyos umbrales son parámetros de la base.
+* **Resumen diario por email:** cada usuario recibe a las 07:00 sus vencidos sin cumplir, sus vencimientos en rojo y amarillo y las oportunidades. Por defecto no incluye la carátula ni el cliente; se puede desactivar desde el perfil.
 
 ## 4. Matriz de Flujos Procesales (Entregable del Abogado)
 
@@ -75,19 +76,22 @@ El equipo legal completa una planilla por régimen procesal. Para el fuero labor
 #### Bloque 2: Reglas de Cómputo del Plazo
 
 * **`Evento_Disparador`**: Hecho exacto que inicia el reloj (el Día Cero).
-* **`Plazo_Valor_Default`**: Número entero de días (o años) predeterminado por ley. Es el valor que la app sugiere y que el abogado puede editar en cada expediente.
-* **`Plazo_Tipo`**:
+* **`Plazo_Valor_Default`**: Número entero predeterminado por ley, en la unidad del tipo (días, horas, meses o años). Es el valor que la app sugiere y que el abogado puede editar en cada expediente.
+* **`Plazo_Tipo`** (el cómputo de cada uno está en la sección 2 del documento de lógica de plazos):
 
-  | Valor | Significado | Soporte en el motor V1 |
+  | Valor | Significado | Gracia |
   | ----- | ----- | ----- |
-  | `HABILES_JUDICIALES` | Días hábiles según el calendario judicial PBA | Sí |
-  | `CORRIDOS` | Días corridos | Sí |
-  | `SIN_PLAZO` | Sin plazo perentorio (valor `0`); depende del tribunal o de la parte | Sí |
-  | `HABILES_ADMINISTRATIVOS` | Días hábiles de la LCT (etapa prejudicial) | Pendiente |
-  | `ANIOS` | Plazos en años (prescripción) | Pendiente |
-  | `FECHA_FIJADA` | Acto con fecha y hora fijadas, como una audiencia (valor `0`); el abogado carga la fecha | Pendiente |
+  | `HABILES_JUDICIALES` | Días hábiles según el calendario judicial PBA | Admite |
+  | `CORRIDOS` | Días corridos | Admite |
+  | `HABILES_ADMINISTRATIVOS` | Días hábiles de la LCT y la etapa prejudicial: lunes a viernes sin feriados; las ferias judiciales no suspenden | No |
+  | `MESES` | Meses, de fecha a fecha | Admite |
+  | `ANIOS` | Años, de fecha a fecha (prescripción) | Admite |
+  | `HORAS` | Horas corridas desde la fecha y hora del disparador (intimaciones en horas) | No |
+  | `FECHA_FIJADA` | Acto con fecha y hora fijadas, como una audiencia (valor `0`); el abogado carga la fecha y la hora | No |
+  | `ANTICIPACION_HABILES_JUDICIALES` | Días hábiles contados hacia atrás desde un acto fijado (ej. citar testigos antes de la audiencia) | No |
+  | `SIN_PLAZO` | Sin plazo perentorio (valor `0`); depende del tribunal o de la parte | No |
 
-* **`Aplica_Gracia`**: `SI` / `NO`. Habilita las 4 primeras horas del día hábil posterior (art. 124 CPCCBA). Siempre `NO` para `SIN_PLAZO` y `FECHA_FIJADA`.
+* **`Aplica_Gracia`**: `SI` / `NO`. Habilita las 4 primeras horas del día hábil posterior (art. 124 CPCCBA). Solo puede ser `SI` en los tipos que la admiten.
 * **`Base_Normativa`**: Ley y artículo.
 
 #### Bloque 4: Asistente / Guía
@@ -114,7 +118,11 @@ Reglas:
 2. **Caminos en paralelo:** si la misma condición aparece en varias filas con distinto destino, al elegirla se abren **todos** esos hitos a la vez. Así se representan los plazos simultáneos; por ejemplo, la prescripción corre mientras avanza el reclamo.
 3. **`CIERRA_CAMINO`:** la fila termina ese camino paralelo sin abrir otro hito (en la base de datos, `target_node_id` queda vacío).
 
-**Relación con el rol representado (propuesta, decisión E13 del análisis):** hay un único flujo para ambos roles. `Rol_Responsable` indica quién debe actuar en cada hito, y la app distingue "te toca a vos" de "le toca a la contraparte" según el rol que el abogado representa en el expediente.
+**Relación con el rol representado (decidido, E13 del análisis):** hay un único flujo para ambos roles. `Rol_Responsable` indica quién debe actuar en cada hito, y la app lo cruza con el rol que el abogado representa en el expediente:
+
+* **Te toca a vos:** el hito es de tu parte, o de `AMBAS`. Tiene alerta y semáforo.
+* **Le toca a la contraparte:** se muestra para seguimiento, sin alerta. Cuando vence, la app avisa la oportunidad; por ejemplo, pedir que se tenga por no contestada la demanda.
+* **Espera al tribunal:** se muestra como "Esperando resolución".
 
 ### Validaciones del importador
 
@@ -124,10 +132,11 @@ El back-office rechaza la planilla si no se cumple alguna de estas reglas:
 * Todo origen y todo destino de `Transiciones` existe en `Nodos`, y ningún destino está vacío.
 * Todo nodo no final tiene al menos una salida; ningún nodo final tiene salidas.
 * Todos los nodos son alcanzables desde el nodo inicial.
-* `SIN_PLAZO` y `FECHA_FIJADA` llevan plazo `0` y gracia `NO`; los demás tipos llevan un plazo mayor que `0`.
+* `SIN_PLAZO` y `FECHA_FIJADA` llevan plazo `0`; los demás tipos llevan un plazo mayor que `0`.
+* `Aplica_Gracia = SI` solo en `HABILES_JUDICIALES`, `CORRIDOS`, `MESES` y `ANIOS`.
 * Todos los valores están dentro de las listas permitidas.
 
-Además, **no se publica** una versión que tenga filas en `PENDIENTE` o `CORREGIR`, o sin el campo "Validado por" de la hoja `Flujo`. Los tipos de plazo pendientes de soporte se aceptan con una advertencia hasta que se defina su tratamiento (sección 4 del análisis).
+Además, **no se publica** una versión que tenga filas en `PENDIENTE` o `CORREGIR`, o sin el campo "Validado por" de la hoja `Flujo`.
 
 ## 5. Ejemplo de Carga: Proceso Laboral Ordinario PBA (Ley 11.653)
 
@@ -143,7 +152,7 @@ Este ejemplo recorre un juicio laboral bonaerense ante un Tribunal de Trabajo de
 * liquidación, ejecución y cobro;
 * acuerdo conciliatorio, al que se puede llegar desde varias etapas.
 
-> **Estado: borrador para validar.** Todas las filas están en `PENDIENTE`. Las citas normativas son orientativas y deben validarse artículo por artículo. Las 23 preguntas abiertas están en la sección 5.3 y en la hoja `Dudas_a_validar`. Si en algún departamento rige la Ley 15.057, se arma una matriz separada para ese régimen. El contenido es idéntico al de la planilla, que es la fuente de trabajo.
+> **Estado: borrador para validar.** Todas las filas están en `PENDIENTE`. Las citas normativas son orientativas y deben validarse artículo por artículo. Las 36 preguntas abiertas están en la sección 5.4 y en la hoja `Dudas_a_validar`; las D26 a D34 son las reglas R1 a R9 del motor de plazos. Si en algún departamento rige la Ley 15.057, se arma una matriz separada para ese régimen. El contenido es idéntico al de la planilla, que es la fuente de trabajo.
 
 ### 5.1 Mapa del flujo
 
@@ -330,6 +339,19 @@ flowchart LR
 | D21 | Homologación denegada | Si se deniega la homologación del acuerdo, ¿a qué etapa vuelve el expediente? | LAB_900 |
 | D22 | Gratuidad | En la demanda del trabajador, ¿el bono Ley 8480 y los aportes Ley 6716 se pagan, se difieren o están exentos? | LAB_050 |
 | D23 | Negligencia y caducidad | ¿Hay plazos de negligencia (por ejemplo, en la prueba informativa) o de caducidad que la app debería alertar? | LAB_110, LAB_120 |
+| D24 | Régimen: transición | ¿Las causas iniciadas antes de que la Ley 15.057 se implemente en un departamento siguen hasta el final con la Ley 11.653? ¿El dato que define el régimen es la fecha de interposición de la demanda? Propuesta de la app: el régimen lo define el tribunal donde tramita, y el departamento más la fecha de interposición solo se usan para controlar. | Todos |
+| D25 | Etapa previa común | ¿La etapa prejudicial (intimaciones, prescripción, conciliación previa) es igual en la Ley 11.653 y en la Ley 15.057? Si es así, se separa como un flujo propio, común a los dos regímenes, y el flujo judicial se elige al interponer la demanda. | LAB_010, LAB_015, LAB_016, LAB_017, LAB_020, LAB_030, LAB_035, LAB_040 |
+| D26 | Motor R1: notificación en día inhábil | Si la notificación ocurre en un día inhábil (sábado, feriado, feria), ¿el plazo empieza a correr el primer día hábil siguiente? Propuesta de la app: el Día Uno es el primer día hábil posterior a la notificación, sin mover la fecha de notificación (es la opción más temprana). | Todos los de días hábiles |
+| D27 | Motor R2: plazo corrido que termina en inhábil | En un plazo en días corridos, si el último día es inhábil, ¿el acto se puede cumplir el día hábil siguiente? Propuesta de la app: alertar por el día nominal (el inhábil) y mostrar también el día hábil siguiente como vencimiento efectivo. | LAB_016 |
+| D28 | Motor R3: hora límite y plazo de gracia | Confirmar: horario judicial de 08:00 a 14:00; el vencimiento ordinario es hasta el cierre del horario (14:00); el plazo de gracia (art. 124 CPCCBA) va hasta las 12:00 del día hábil siguiente. ¿Una presentación electrónica hecha fuera de horario el día del vencimiento se tiene por presentada en el horario hábil siguiente (dentro de la gracia)? ¿Qué plazos vencen a las 24:00 del día (por ejemplo, la prescripción)? | Todos los que aplican gracia; LAB_015 |
+| D29 | Motor R4: inhábiles variables | ¿Jueves Santo, el 24/12 y el 31/12 son inhábiles judiciales en PBA, o depende de lo que declare la SCBA cada año? ¿Cuál es la fuente oficial para armar el calendario (feriados, ferias y asuetos por departamento)? Propuesta de la app: se cargan solo si hay acordada. | Calendario |
+| D30 | Motor R5: Día Cero según la forma de notificación | ¿Cuándo se perfecciona cada forma de notificación: electrónica (¿martes o viernes siguiente a quedar disponible, o el hábil siguiente?), cédula en papel, ministerio de la ley (art. 133 CPCCBA) y personal? Propuesta para la V1: el abogado carga la fecha ya perfeccionada y la forma; más adelante la app sugiere la fecha de la notificación electrónica y el abogado la confirma. | LAB_060, LAB_070 y todos los que empiezan con una notificación |
+| D31 | Motor R6: días hábiles administrativos | En los plazos en días hábiles de la LCT y la etapa prejudicial, ¿qué días son inhábiles: solo sábados, domingos y feriados, o también los días no laborables? ¿Las ferias judiciales suspenden estos plazos? Propuesta de la app: solo sábados, domingos y feriados (es la opción más temprana). | LAB_017, LAB_020, LAB_030 |
+| D32 | Motor R7: plazos en meses o años | Confirmar el cómputo de fecha a fecha (art. 6 CCyC): si el mes de vencimiento no tiene ese día, vence el último día del mes. Si el vencimiento cae en un día inhábil, ¿se puede presentar la demanda el hábil siguiente? ¿Vence a las 24:00? Propuesta de la app: alertar por el día nominal y mostrar el hábil siguiente como vencimiento efectivo. | LAB_015 |
+| D33 | Motor R8: plazos en horas | Para las intimaciones en horas (por ejemplo, 48 horas), ¿se cuentan corridas desde el instante exacto o desde la hora siguiente? Si terminan en un día inhábil, ¿se trasladan? Propuesta de la app: corridas desde el instante, sin traslado. | Intimaciones en horas (plazos sueltos) |
+| D34 | Motor R9: plazos de anticipación | En un plazo de N días de anticipación a un acto (por ejemplo, citar testigos antes de la audiencia), ¿los N días hábiles tienen que quedar libres entre el acto y la audiencia, o alcanza con cumplirlo el N-ésimo día hábil anterior? Propuesta de la app: N días libres (un día antes). | LAB_210 |
+| D35 | Plazos comunes con varios demandados | Con varios demandados, ¿el plazo para contestar es común y corre desde la última notificación (art. 156 CPCCBA de aplicación supletoria)? ¿Y si representamos a uno de los demandados? Propuesta para la V1: el abogado carga el Día Cero que corresponde; la app muestra un aviso cuando el expediente tiene más de un demandado. | LAB_070 |
+| D36 | Suspensión de plazos | ¿Las partes pueden acordar la suspensión de los plazos en el proceso laboral (art. 157 CPCCBA de aplicación supletoria)? ¿Requiere presentación y proveído del tribunal? ¿Qué otras suspensiones son habituales (por ejemplo, por resolución del tribunal en el expediente)? Propuesta para la V1: el abogado carga el período de suspensión en el expediente y la app lo trata como días inhábiles de ese expediente. | Todos |
 
 ## 6. Instrucciones para el Equipo Legal
 
@@ -337,7 +359,7 @@ flowchart LR
 2. **Plazos en paralelo:** repetir la misma condición en varias filas para abrir varios hitos a la vez (ver `LAB_010` y `LAB_100`). Cerrar cada camino paralelo con `CIERRA_CAMINO`.
 3. **Día Cero:** el sistema calcula que los plazos comienzan a correr a partir del día hábil siguiente al `Evento_Disparador` (según normativa procesal bonaerense).
 4. **Casos sin plazo:** usar `SIN_PLAZO` con valor `0` y gracia `NO` para etapas que dependen de los tiempos del juzgado (ej. dictado de un proveído simple).
-5. **Audiencias:** usar `FECHA_FIJADA` con valor `0`; el abogado carga la fecha y hora en cada expediente.
+5. **Audiencias:** usar `FECHA_FIJADA` con valor `0`; el abogado carga la fecha y hora en cada expediente. Lo que haya que hacer antes de la audiencia (ej. citar testigos) va en un hito con `ANTICIPACION_HABILES_JUDICIALES`.
 6. **Checklist y documentación:** separar cada ítem con punto y coma (`;`).
 7. **Validación:** revisar cada fila y marcar `Estado_Validacion`. Responder las preguntas de `Dudas_a_validar`. Al terminar, completar "Validado por" y la fecha en la hoja `Flujo`.
 8. **Controles:** antes de entregar la planilla, corregir toda celda en rojo de las columnas `Control`.
