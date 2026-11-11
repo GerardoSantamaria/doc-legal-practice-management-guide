@@ -1,6 +1,6 @@
 # Análisis de la Documentación y Definiciones Pendientes (V1)
 
-**Estado:** borrador para revisión · **Fecha:** 10/11/2026
+**Estado:** borrador para revisión · **Fecha:** 11/11/2026
 
 Este documento revisa los cuatro documentos del proyecto (visión, lógica de plazos, modelo de datos y UI/UX), registra las decisiones ya tomadas y lista lo que falta definir para empezar a desarrollar la V1.
 
@@ -10,11 +10,23 @@ Convención: **[LEGAL]** = lo debe resolver el equipo legal · **[PRODUCTO]** = 
 
 ## 1. Resumen
 
-La base de producto es buena: el alcance de la V1 es acotado, la separación entre la "receta" procesal y el expediente concreto es correcta y el foco en el plazo de gracia ataca el dolor real del abogado. Pero **todavía no alcanza para empezar a desarrollar**. Hay tres bloqueantes:
+**Estado al 11/11/2026: alcanza para empezar a desarrollar el lunes 16/11.** La V1 está definida de punta a punta en borrador:
 
-1. **La matriz de flujos del fuero laboral está incompleta.** Hay 5 filas de ejemplo, dos mal armadas, y no se define qué régimen procesal (Ley 11.653 o Ley 15.057) aplica en cada departamento judicial. **[LEGAL]**
-2. **El motor de plazos tenía errores y casos sin definir.** Se corrigió en `logica_matematica_calculadora_de_dias_habiles_judiciales.md`, pero quedan cinco reglas jurídicas por confirmar (sección 4 de ese documento). **[LEGAL]**
-3. **Faltan definiciones técnicas y de cumplimiento:** hosting, frontend, los precios de los planes y el plan para las normas ISO. **[TÉCNICO] [PRODUCTO]**
+- el producto y la matriz del flujo laboral (Ley 11.653, 38 hitos);
+- el motor de plazos, con 23 casos de prueba en verde en la implementación de referencia;
+- el modelo de datos y el contrato de API, que cubre todas las pantallas;
+- el diseño de las 18 pantallas, con maquetas y capturas;
+- las tareas del backend (BE-01 a BE-67) y del frontend (FE-01 a FE-65), de 1 a 3 días cada una;
+- el modelado de amenazas y los documentos legales.
+
+Lo que falta no frena el arranque, pero sí partes concretas del desarrollo. Algunas cosas tardan semanas en conseguirse, así que hay que pedirlas ya. Por orden de urgencia:
+
+1. **Validación legal de la matriz y de las reglas del motor.** Reunión con el abogado el 12/11/2026, preparada en [`reunion_validacion_12_11_2026.md`](reunion_validacion_12_11_2026.md). Las respuestas cambian parámetros del motor (que se programa en las primeras semanas) y valores de la matriz. Sin la firma no se importa el flujo real. Conviene firmar antes de la feria judicial de enero. **[LEGAL]**
+2. **Trámites largos:** la empresa emisora y el contador, el certificado de ARCA, la marca en el INPI y el dominio, el hosting, los proveedores de pagos y de email, y el cliente OAuth de Google. Cada uno tiene una fecha límite en la sección 13. **[PRODUCTO] [TÉCNICO]**
+3. **Decisiones de producto:** los precios y los cortes de los tramos (antes de marzo), y las herramientas del frontend (el primer día). **[PRODUCTO] [TÉCNICO]**
+4. **Antes de tener usuarios reales:** el calendario judicial `OFICIAL`, la revisión de los documentos legales por un abogado y la prueba de penetración. **[LEGAL] [TÉCNICO]**
+
+El plan por semanas está en la sección 13.
 
 ---
 
@@ -169,7 +181,7 @@ La base de producto es buena: el alcance de la V1 es acotado, la separación ent
 | Suscripciones | `plans`, `subscriptions`, `payment_events` |
 | Catálogos | `jurisdictions`, `jurisdiction_schedules`, `judicial_departments`, `legal_branches`, `procedural_regimes`, `department_regimes`, `courts`, `holidays_calendar`, `calendar_coverage` |
 | Motor de flujos | `flows`, `flow_versions`, `flow_nodes`, `flow_node_checklist_items`, `flow_transitions` |
-| Datos del estudio | `clients`, `legal_cases`, `case_parties`, `case_steps`, `case_step_checklist_items`, `case_suspensions`, `alert_settings`, `notification_preferences` |
+| Datos del estudio | `clients`, `legal_cases`, `case_parties`, `case_steps`, `case_step_checklist_items`, `case_suspensions`, `alert_settings`, `notification_preferences`, `deadline_change_notices`, `deadline_change_notice_reads`, `data_exports` |
 | Auditoría | `audit_events` |
 
 Decisiones que se tomaron al detallar el modelo y conviene revisar:
@@ -197,6 +209,8 @@ Decisiones que se tomaron al detallar el modelo y conviene revisar:
 ---
 
 ## 6. UI/UX: qué falta **[PRODUCTO]**
+
+**Resuelto.** Todos los puntos de esta lista están diseñados en [`diseno_de_pantallas_v1.md`](diseno_de_pantallas_v1.md), con maquetas en `diseno/pantallas/`. Lo que queda (pantallas no maquetadas, prueba con usuarios) está en la sección 7 de ese documento. La lista original:
 
 - Inicio de sesión con Google, onboarding (creación del estudio, aceptación de términos y política de privacidad) y perfil.
 - **Gestión de dispositivos:** ver dónde está abierta la sesión y cerrarla.
@@ -584,17 +598,17 @@ Si se aprueba una nueva ley de protección de datos personales, hay que revisar 
 | # | Ítem | Responsable | Estado |
 | ----- | ----- | ----- | ----- |
 | 1 | Régimen procesal por departamento judicial (11.653 / 15.057) | [LEGAL] | Diseño listo (resolución por tribunal con control por departamento y fecha); falta el dato (D01) y la regla de transición (D24) |
-| 2 | Matriz completa del fuero laboral, en formato de dos hojas, firmada | [LEGAL] | Borrador listo (Ley 11.653, 36 dudas); se valida con el abogado el 12/11/2026 |
-| 3 | Confirmación de las reglas R1 a R9 del motor de plazos | [LEGAL] | Opciones y recomendación listas; se validan el 12/11/2026 (D26 a D34) |
+| 2 | Matriz completa del fuero laboral, en formato de dos hojas, firmada | [LEGAL] | Borrador listo (Ley 11.653, 36 dudas); se valida con el abogado el 12/11/2026, con la agenda de [`reunion_validacion_12_11_2026.md`](reunion_validacion_12_11_2026.md). Firma propuesta: semana del 23/11 |
+| 3 | Confirmación de las reglas R1 a R9 del motor de plazos | [LEGAL] | Opciones, recomendación y postura por defecto listas; se validan el 12/11/2026 (D26 a D34) |
 | 4 | Calendario judicial 2027–2028 cargado y validado | Equipo | Lo arma el equipo. Fase inicial con calendario `PROVISORIO` (solo fines de semana); `OFICIAL` antes de tener usuarios reales |
 | 5 | Decisión sobre un flujo único con responsable por hito o un flujo por rol (E13) | [PRODUCTO] | Decidido: flujo único. Aplicado en la matriz, el modelo y la UI |
 | 6 | Alcance de la V1: plazos simultáneos, plazos sueltos, tipos de plazo, retroceder etapa, vencidos, casos borde, alertas y alta en curso | [PRODUCTO] | Decidido y aplicado. Solo queda el régimen de las causas viejas (D24, [LEGAL]) |
 | 7 | Modelo de suscripción final y proveedor de pagos | [PRODUCTO] | Decidido el modelo por tramos de clientes y la facturación propia ante ARCA. Faltan los precios, los cortes de los tramos, el proveedor de pagos y la condición fiscal del emisor |
 | 8 | Responsable de seguridad y privacidad designado, y autoevaluación inicial con la declaración de aplicabilidad | [PRODUCTO] | Responsable provisorio: Gerardo Zena. Faltan la autoevaluación inicial y la declaración de aplicabilidad |
-| 9 | Frontend (framework, PWA o nativa) | [TÉCNICO] | Decidido: React como PWA |
+| 9 | Frontend (framework, PWA o nativa) | [TÉCNICO] | Decidido: React como PWA. Las herramientas propuestas en `tareas_frontend_v1.md` se confirman el primer día |
 | 10 | Hosting y región, según los criterios de la sección 7.3 | [TÉCNICO] | Decidido: Argentina. Falta relevar y elegir el proveedor; los objetivos de recuperación están en la sección 7.4 |
-| 11 | Modelo de datos actualizado con los cambios de la sección 5 | [TÉCNICO] | Hecho, en revisión |
-| 12 | Contrato de API (OpenAPI) de la V1 | [TÉCNICO] | Borrador v0.1 en `api/openapi_v1.yaml`, en revisión |
+| 11 | Modelo de datos actualizado con los cambios de la sección 5 | [TÉCNICO] | Hecho, en revisión. Incluye las tablas de avisos de cambio y de exportaciones que pidieron las pantallas |
+| 12 | Contrato de API (OpenAPI) de la V1 | [TÉCNICO] | v0.1 en `api/openapi_v1.yaml`: 97 operaciones, valida como OpenAPI 3.1 y cubre todas las pantallas (diseño de pantallas, sección 6). En revisión |
 | 13 | Modelado de amenazas inicial y declaración de aplicabilidad ISO | [TÉCNICO] | Modelado inicial en `modelado_de_amenazas_v1.md`, con 5 brechas abiertas. Falta la declaración de aplicabilidad |
 | 14 | Términos y condiciones, política de privacidad y contrato de encargo | [LEGAL] | Borradores v0.1 en `legal/`. Faltan la revisión de un abogado y los datos de la sección 10.7 |
 | 15 | Backlog de historias con criterios de aceptación | [PRODUCTO] | Borrador v0.1 en `backlog_historias_v1.md`, a priorizar |
@@ -603,3 +617,70 @@ Si se aprueba una nueva ley de protección de datos personales, hay que revisar 
 | 18 | Condición fiscal del emisor, validada con un contador | [PRODUCTO] | Pendiente |
 | 19 | Marca "Foja" verificada en el INPI (clases 9 y 42) y dominio registrado | [PRODUCTO] | Pendiente. Alternativas en `identidad_y_diseno_v1.md` |
 | 20 | Logo final (texto a curvas) e íconos de la PWA exportados | [DISEÑO] | Propuesta en `diseno/` |
+| 21 | Diseño de todas las pantallas | [PRODUCTO] | Hecho: 18 maquetas con capturas en `diseno_de_pantallas_v1.md`. Falta probar Inicio y la ficha con dos o tres abogados |
+| 22 | Tareas técnicas del backend y del frontend | [TÉCNICO] | Hecho: `tareas_backend_v1.md` y `tareas_frontend_v1.md` |
+| 23 | Empresa emisora (razón social y CUIT), necesaria para ARCA, el proveedor de pagos y los documentos legales | [PRODUCTO] | Pendiente |
+| 24 | Cliente OAuth de Google (desarrollo y producción) y dominio de Google Workspace para los administradores | [TÉCNICO] | Pendiente. El de desarrollo hace falta en la semana del 14/12 |
+| 25 | Proveedor de email con SPF, DKIM y DMARC en el dominio propio | [TÉCNICO] | Pendiente |
+| 26 | Repositorios del código, entornos y acceso del equipo | [TÉCNICO] | Pendiente; primer día del desarrollo |
+| 27 | Proveedor y presupuesto de la prueba de penetración (brecha B5) | [PRODUCTO] | Pendiente |
+
+---
+
+## 13. Plan de arranque
+
+**Supuestos:**
+- **Equipo:** una persona en el backend y una en el frontend, a tiempo completo. Gerardo Zena lleva producto, los trámites y la seguridad. El abogado valida la matriz y el calendario.
+- **Ritmo:** las tareas son de 1 a 3 días; se calcula un promedio de 2 días, es decir, unas 2 o 3 tareas por semana y por persona. Con 67 tareas de backend y 65 de frontend, la V1 lleva **unas 27 semanas**. Con ese ritmo, las pruebas con usuarios reales quedan para junio de 2027.
+- **Revisión del plan:** al terminar la semana 4 (11/12), con la velocidad real. Si el equipo es una sola persona, los plazos se duplican.
+- El frontend no espera al backend: trabaja contra la API simulada (FE-07), generada desde el contrato.
+
+### 13.1 Antes de empezar (12 y 13/11)
+
+- Reunión con el abogado (12/11) y registro de las decisiones en la sección 2.
+- Arrancar los trámites largos de la sección 13.3: la empresa emisora y el contador, la búsqueda en el INPI y el relevamiento del hosting.
+- Crear los repositorios del backend y del frontend, y dar acceso al equipo.
+
+### 13.2 Primeras ocho semanas
+
+| Semana | Backend | Frontend | Producto, legal y trámites |
+| :--- | :--- | :--- | :--- |
+| 1 · 16/11 | BE-01, BE-02 y BE-24 (contrato del motor y sus casos de prueba, con las respuestas del 12/11) | Confirmar las herramientas el primer día. FE-01, FE-02 y FE-03 | Reunión con el contador; búsqueda en el INPI; lista corta de hosting |
+| 2 · 23/11 | BE-25 y BE-26: el motor completo, aislado y en verde | FE-04, FE-05 y FE-06 | **Firma de la matriz v1.** Registrar el dominio si el INPI no muestra conflictos |
+| 3 · 30/11 | BE-03, BE-04 y BE-05 | FE-07 y FE-08 | Condición fiscal del emisor definida con el contador; pedir el certificado de homologación de ARCA |
+| 4 · 07/12 | BE-06, BE-07 y BE-08 | FE-09, FE-10 y FE-11 | Crear el cliente OAuth de Google de desarrollo. **Revisión del plan** |
+| 5 · 14/12 | BE-09, BE-10 y BE-11 (login con Google, sesión y dispositivos) | FE-12, FE-13 y FE-14 | Elegir el hosting (sección 7.3) |
+| 6 · 21/12 | BE-12 y BE-13 (estudio activo y RLS, con las pruebas de aislamiento) | FE-15 y FE-16 | Semana corta por las fiestas |
+| 7 · 28/12 | BE-14 | FE-17 | Semana corta. Vacaciones a acordar |
+| 8 · 04/01 | BE-15 y BE-16 | FE-18 y FE-19 | Dominio de Google Workspace para los administradores; carga del calendario 2027 |
+
+**Por qué el motor va primero:** es la pieza de más riesgo y la única que no depende de nada más que del proyecto base. Sus casos de prueba ya existen y las reglas se confirman el 12/11. Así, a fin de noviembre el cálculo de plazos está terminado y probado, antes de cualquier pantalla (mejora 3 de la sección 11).
+
+**Enero es feria judicial:** el abogado va a estar menos disponible, así que todo lo que necesita su validación (la matriz y las fuentes del calendario) se cierra antes del 18/12.
+
+### 13.3 Trámites largos
+
+| Qué | Para qué tarea | Hace falta para | Arrancar |
+| :--- | :--- | :--- | :--- |
+| Empresa emisora y contador (condición fiscal, IVA, ingresos brutos) | BE-59 a BE-62; documentos legales | Diciembre | Semana 1 |
+| Certificado de ARCA de homologación y punto de venta para web services | BE-60 | Enero, para arrancar temprano la autenticación | Semana 3 |
+| Marca en el INPI (clases 9 y 42) y dominio | OAuth de producción, emails, documentos legales | Antes de marzo | Semana 1 |
+| Hosting en Argentina, con WAF y gestor de secretos (brechas B2 y B3) | BE-02 (despliegue), staging para FE-62 | Enero | Semana 1 |
+| Cliente OAuth de Google de desarrollo | BE-09 y FE-15 | 14/12 | Semana 4 |
+| Proveedor de email y DNS (SPF, DKIM y DMARC) | BE-52 y BE-53 | Abril | Febrero |
+| Precios, cortes de los tramos y proveedor de pagos | BE-54 a BE-58; FE-49 a FE-51 | Mayo (los precios aparecen antes, en la pantalla del plan) | Antes de marzo |
+| Certificado de ARCA de producción | Lanzamiento | Junio | Abril |
+| Revisión de los documentos legales por un abogado e inscripción en el Registro Nacional de Bases de Datos | Lanzamiento | Junio | Febrero |
+| Proveedor de la prueba de penetración | BE-67 | Junio | Abril |
+| Calendario judicial 2027 `OFICIAL`, con validador | Pruebas con usuarios reales | Antes de las pruebas | Enero |
+
+### 13.4 De enero a junio
+
+| Mes | Backend | Frontend |
+| :--- | :--- | :--- |
+| Enero | Cierre de identidad (BE-17 y BE-18) y catálogos, calendario y back-office (bloque 2) | Estados transversales, permisos y PWA (bloque 3), e Inicio (bloque 4) |
+| Febrero | Flujos e importación de la matriz firmada (bloque 4); clientes y altas de expediente (BE-32 a BE-36) | Clientes y expedientes (bloque 5) |
+| Marzo | Resto de expedientes (BE-37 a BE-39); ficha y pasos (bloque 6) | Ficha del expediente (bloque 6) |
+| Abril | Recálculo (bloque 7); alertas y emails (bloque 8) | Calendario (bloque 7) y cuenta (bloque 8) |
+| Mayo | Suscripción y cobro (bloque 9); facturación con ARCA (bloque 10) | Back-office (bloque 9) y emails (bloque 10) |
+| Junio | Privacidad y retención (bloque 11); alertas de seguridad, prueba del contrato y pentest (bloque 12) | Flujos punta a punta contra staging (FE-62); accesibilidad, CSP y rendimiento (FE-63 a FE-65). Pruebas con dos o tres estudios |

@@ -343,6 +343,7 @@ Además de sus criterios propios, toda tarea cumple la Definición de terminado 
 - Migraciones de `flows`, `flow_versions`, `flow_nodes`, `flow_node_checklist_items` y `flow_transitions`.
 - Una versión `PUBLICADA` no se puede modificar (trigger o permisos de base).
 - `obtenerVersionFlujo`, con nodos, transiciones y checklist.
+- `listarFlujos` para el back-office: cada flujo con sus versiones, estado, quién publicó y notas.
 
 **Lista cuando:** hay una prueba de que un `UPDATE` sobre un nodo de una versión publicada falla.
 **Depende de:** BE-19.
@@ -447,7 +448,8 @@ Además de sus criterios propios, toda tarea cumple la Definición de terminado 
 ### BE-37 · Consulta y ciclo de vida del expediente
 **Para qué:** listar, editar, terminar y reactivar expedientes (HU-20).
 **Incluye:**
-- `listarExpedientes` (con filtros y paginado), `obtenerExpediente` y `actualizarExpediente` (409 si se cambia el tribunal con flujo judicial).
+- `listarExpedientes`: búsqueda (también por tribunal), filtros por responsable, departamento y rol representado, paginado y `statusCounts` por pestaña. En cada fila, el nivel y los días hábiles del próximo vencimiento.
+- `obtenerExpediente` y `actualizarExpediente` (409 si se cambia el tribunal con flujo judicial).
 - `terminarExpediente`, con motivo y fecha obligatorios.
 - `reactivarExpediente`, que aplica el límite de clientes.
 - `eliminarExpediente` como borrado lógico.
@@ -551,8 +553,7 @@ Además de sus criterios propios, toda tarea cumple la Definición de terminado 
 **Incluye:**
 - Recálculo por expediente, por estudio o por jurisdicción, en lotes de un solo estudio por transacción (ISO-04).
 - Solo los pasos `PENDIENTE` que no sean `MANUAL`.
-- Por cada vencimiento que cambia, un registro con el antes y el después, para el aviso de "tu vencimiento cambió".
-- **Requiere agregar la tabla al modelo de datos** (por ejemplo, `deadline_change_notices`, con estudio, paso, antes, después, causa, fecha y si fue visto).
+- Por cada vencimiento que cambia, un registro en `deadline_change_notices` con el antes, el después, la causa y la dirección (`ATRASA`, `ADELANTA`, `SIN_FECHA`). Si el resultado es el mismo, no se registra nada.
 
 **Lista cuando:** hay una prueba de que un feriado nuevo corre un vencimiento, se registra el cambio y un paso `MANUAL` no se toca.
 **Depende de:** BE-27, BE-41.
@@ -580,9 +581,9 @@ Además de sus criterios propios, toda tarea cumple la Definición de terminado 
 **Para qué:** que todos los cambios que mueven plazos recalculen.
 **Incluye:**
 - Recálculo al crear o borrar un inhábil del estudio, al cargar o quitar una suspensión, al cambiar un horario y al reprogramar el acto de referencia de una anticipación (R9).
-- `obtenerDashboard` y `obtenerMapa` muestran los avisos de cambio no vistos.
+- `listarAvisosCambio` (con `scope`, `caseId` y `seen`) y `marcarAvisosVistos`. "Visto" es por usuario (`deadline_change_notice_reads`) y se permite en solo lectura.
 
-**Lista cuando:** hay una prueba por cada disparador.
+**Lista cuando:** hay una prueba por cada disparador, y otra de que lo que marca un miembro no oculta el aviso a los demás.
 **Depende de:** BE-22, BE-23, BE-39, BE-46.
 
 ---
@@ -597,7 +598,9 @@ Además de sus criterios propios, toda tarea cumple la Definición de terminado 
   - pasos en plazo de gracia;
   - rojos y amarillos según los umbrales en días hábiles;
   - oportunidades por pasos de la contraparte, si el usuario no las desactivó;
-  - marca de cálculo aproximado.
+  - marca de cálculo aproximado;
+  - `businessDaysRemaining` en cada tarjeta, y el mismo dato con `alertLevel` en los pasos de `obtenerMapa`;
+  - parámetro `scope` (`MIOS` o `ESTUDIO`), con el valor por defecto según el rol.
 - `obtenerParametrosAlertas` y `actualizarParametrosAlertas`: el rojo tiene que ser menor que el amarillo; `ALERTAS_CONFIGURADAS` en auditoría.
 - Consulta con índices adecuados y un tiempo objetivo con 2.000 pasos por estudio.
 
@@ -628,7 +631,7 @@ Además de sus criterios propios, toda tarea cumple la Definición de terminado 
 ### BE-53 · Resumen diario por email
 **Para qué:** que el abogado se entere de sus vencimientos sin abrir la app (HU-34, JOB-02).
 **Incluye:**
-- Job a la hora configurada (por defecto, 07:00): por usuario, junta sus vencidos, rojos, amarillos y oportunidades de cada estudio donde está activo.
+- Job a la hora configurada (por defecto, 07:00): por usuario, junta sus vencidos, rojos, amarillos y oportunidades de cada estudio donde está activo, con el mismo `scope` por defecto que el dashboard.
 - Por defecto, solo cantidades y números de expediente; carátula y cliente, solo con la preferencia activada.
 - No se envía si no hay novedades. Alerta si a las 07:30 no salió.
 
@@ -748,10 +751,10 @@ Además de sus criterios propios, toda tarea cumple la Definición de terminado 
 ### BE-63 · Exportación de los datos del estudio
 **Para qué:** que el titular se lleve todos sus datos (HU-45, JOB-03, JOB-04).
 **Incluye:**
-- `pedirExportacion` y `obtenerExportacion`: un proceso en segundo plano genera un JSON o un XLSX con clientes, expedientes, pasos e historial.
+- Migración de `data_exports`.
+- `pedirExportacion`, `obtenerExportacion` y `listarExportaciones` (últimos 7 días): un proceso en segundo plano genera un JSON o un XLSX con clientes, expedientes, pasos e historial.
 - En el XLSX, los valores que empiezan con `=`, `+`, `-` o `@` se escapan.
 - Enlace firmado, de un solo uso y válido por 24 horas. Máximo 3 pedidos por día. `DATOS_EXPORTADOS` en auditoría.
-- **Requiere agregar la tabla al modelo de datos** (por ejemplo, `data_exports`, con estado, formato, quién la pidió, vencimiento del enlace y si se descargó).
 
 **Lista cuando:** hay pruebas de un enlace usado dos veces (rechazado), un valor con `=` (escapado) y un cuarto pedido en el día (429).
 **Depende de:** BE-29 (almacenamiento), BE-51.
@@ -770,6 +773,7 @@ Además de sus criterios propios, toda tarea cumple la Definición de terminado 
 **Para qué:** no guardar datos más tiempo del declarado en la política de privacidad.
 **Incluye:**
 - Job que borra las sesiones vencidas, las invitaciones vencidas, los logs de aplicación a los 90 días y los eventos de seguridad de la cuenta al año, según la tabla de retención.
+- También los avisos de cambio a los 180 días y los registros de exportación a los 30.
 - Los eventos de auditoría de un estudio activo no se borran.
 
 **Lista cuando:** hay una prueba con datos de cada antigüedad.
@@ -817,11 +821,11 @@ Además de sus criterios propios, toda tarea cumple la Definición de terminado 
 | 4 · Flujos | BE-28 a BE-31 | Matriz validada por el abogado |
 | 5 · Clientes y expedientes | BE-32 a BE-39 | — |
 | 6 · Pasos | BE-40 a BE-45 | — |
-| 7 · Recálculo | BE-46 a BE-49 | Agregar la tabla de avisos de cambio al modelo |
+| 7 · Recálculo | BE-46 a BE-49 | — |
 | 8 · Alertas | BE-50 a BE-53 | Proveedor de email y dominio con SPF, DKIM y DMARC |
 | 9 · Suscripción | BE-54 a BE-58 | Proveedor de pagos y precios |
 | 10 · Facturación | BE-59 a BE-62 | Certificado y punto de venta de ARCA; condición fiscal del emisor |
-| 11 · Privacidad | BE-63 a BE-65 | Agregar la tabla de exportaciones al modelo |
+| 11 · Privacidad | BE-63 a BE-65 | — |
 | 12 · Cierre | BE-66 a BE-67 | Hosting elegido; proveedor del pentest |
 
 **Lo que se puede hacer en paralelo:**

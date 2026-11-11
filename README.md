@@ -14,7 +14,7 @@ Este repositorio es **solo documental**: contiene la definición funcional, téc
 
 | Documento | Contenido |
 | :--- | :--- |
-| `analisis_y_definiciones_pendientes_v1.md` | Decisiones, alcance de la V1, arquitectura, hosting, recuperación, seguridad, checklist. |
+| `analisis_y_definiciones_pendientes_v1.md` | Decisiones, alcance de la V1, arquitectura, hosting, recuperación, seguridad, checklist y plan de arranque por semanas. |
 | `documentacion_de_proyecto_asistente_legal_pba.md` | Producto, matriz del flujo laboral de PBA (Ley 11.653), dudas para el abogado. |
 | `logica_matematica_calculadora_de_dias_habiles_judiciales.md` | Reglas del motor de plazos, pseudocódigo y casos de prueba. |
 | `modelo_de_base_de_datos_relacional.md` | Modelo de datos de PostgreSQL. |
@@ -28,5 +28,6 @@ Este repositorio es **solo documental**: contiene la definición funcional, téc
 | `tareas_frontend_v1.md` | Tareas técnicas del frontend (React PWA y back-office), de 1 a 3 días cada una, con sus dependencias y las tareas del backend que necesitan. |
 | `legal/` | Borradores de términos y condiciones, política de privacidad y acuerdo de encargo del tratamiento. Requieren revisión de un abogado antes de publicarse. |
 | `matriz_flujo_laboral_pba_ley_11653.xlsx` | Matriz de ejemplo del flujo laboral, para validar con el abogado. |
+| `reunion_validacion_12_11_2026.md` | Preparación de la reunión con el abogado: agenda, las 36 dudas ordenadas por impacto, propuesta y postura por defecto de cada una, y pasos posteriores. |
 | `diagrama_flujo_laboral_pba_ley_11653.md` | Diagramas Mermaid generados desde la matriz. |
 | `herramientas/` | Scripts para regenerar la matriz, los diagramas y las tablas del documento de proyecto. Ver `herramientas/README.md`. |

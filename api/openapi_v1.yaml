@@ -838,7 +838,9 @@ paths:
     get:
       tags: [Expedientes]
       summary: Listar y buscar expedientes
-      description: Búsqueda por carátula, número o cliente.
+      description: |
+        Búsqueda por carátula, número, cliente o nombre del tribunal.
+        `statusCounts` cuenta los expedientes con los mismos filtros, sin tener en cuenta `status`, para los contadores de las pestañas.
       operationId: listarExpedientes
       parameters:
         - $ref: '#/components/parameters/Query'
@@ -850,6 +852,19 @@ paths:
           in: query
           schema:
             $ref: '#/components/schemas/Id'
+        - name: responsibleUserId
+          in: query
+          description: Debe ser un miembro del estudio activo; si no, responde 400.
+          schema:
+            $ref: '#/components/schemas/Id'
+        - name: departmentId
+          in: query
+          schema:
+            $ref: '#/components/schemas/Id'
+        - name: representedRole
+          in: query
+          schema:
+            $ref: '#/components/schemas/RepresentedRole'
         - name: sort
           in: query
           schema:
@@ -1694,6 +1709,8 @@ paths:
       summary: Dashboard de alertas
       description: Vencidos sin cumplir, último momento (gracia), rojo, amarillo y oportunidades de la contraparte, según los umbrales de `alert-settings`.
       operationId: obtenerDashboard
+      parameters:
+        - $ref: '#/components/parameters/AlertScope'
       responses:
         '200':
           description: Alertas del usuario en el estudio activo.
@@ -1703,6 +1720,70 @@ paths:
                 $ref: '#/components/schemas/Dashboard'
         '401':
           $ref: '#/components/responses/Unauthorized'
+  /api/v1/deadline-change-notices:
+    get:
+      tags: [Alertas]
+      summary: Avisos de vencimientos que cambiaron
+      description: |
+        Un aviso por cada vencimiento pendiente que movió un recálculo (calendario, inhábil del estudio, suspensión u horario).
+        Cada usuario marca los suyos como vistos; lo que ve un miembro no cambia lo que ven los demás.
+      operationId: listarAvisosCambio
+      parameters:
+        - $ref: '#/components/parameters/AlertScope'
+        - name: seen
+          in: query
+          description: '`false` (por defecto) solo los no vistos por el usuario; `true` solo los vistos.'
+          schema:
+            type: boolean
+            default: false
+        - name: caseId
+          in: query
+          schema:
+            $ref: '#/components/schemas/Id'
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Size'
+      responses:
+        '200':
+          description: Página de avisos, del más nuevo al más viejo.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeadlineChangeNoticePage'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /api/v1/deadline-change-notices/seen:
+    post:
+      tags: [Alertas]
+      summary: Marcar avisos de cambio como vistos
+      description: Solo para el usuario actual. Un ID que no existe o es de otro estudio responde 404 y no marca ninguno. Se permite en solo lectura.
+      operationId: marcarAvisosVistos
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [noticeIds]
+              properties:
+                noticeIds:
+                  type: array
+                  minItems: 1
+                  maxItems: 100
+                  uniqueItems: true
+                  items:
+                    $ref: '#/components/schemas/Id'
+      responses:
+        '204':
+          description: Avisos marcados.
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
 
   # ---------------------------------------------------------------- Suscripción
   /api/v1/plans:
@@ -1974,6 +2055,31 @@ paths:
 
   # ---------------------------------------------------------------- Exportación
   /api/v1/exports:
+    get:
+      tags: [Exportación]
+      summary: Exportaciones recientes del estudio
+      description: Las pedidas en los últimos 7 días, de la más nueva a la más vieja. No incluye `downloadUrl`; el enlace se pide con `obtenerExportacion`.
+      operationId: listarExportaciones
+      x-roles: [TITULAR]
+      responses:
+        '200':
+          description: Exportaciones recientes.
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    maxItems: 21
+                    items:
+                      $ref: '#/components/schemas/Export'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
     post:
       tags: [Exportación]
       summary: Pedir la exportación completa del estudio
@@ -2175,6 +2281,32 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '409':
           $ref: '#/components/responses/Conflict'
+  /api/admin/v1/flows:
+    get:
+      tags: [Back-office]
+      summary: Flujos y sus versiones
+      description: Todos los flujos, con sus versiones de la más nueva a la más vieja. Es la entrada a la importación de la matriz (`flowId`).
+      operationId: listarFlujos
+      x-roles: [ADMIN]
+      responses:
+        '200':
+          description: Flujos.
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    maxItems: 100
+                    items:
+                      $ref: '#/components/schemas/FlowAdminSummary'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
   /api/admin/v1/flow-imports:
     post:
       tags: [Back-office]
@@ -2487,6 +2619,16 @@ components:
       required: true
       schema:
         $ref: '#/components/schemas/Id'
+    AlertScope:
+      name: scope
+      in: query
+      description: |
+        `MIOS`: expedientes cuyo responsable es el usuario. `ESTUDIO`: todos los expedientes del estudio.
+        Sin el parámetro, `MIOS` para titular y abogado, y `ESTUDIO` para asistente (que no es responsable de expedientes).
+        En el plan Individual los dos valores dan lo mismo. El resumen diario por email usa el mismo criterio por defecto.
+      schema:
+        type: string
+        enum: [MIOS, ESTUDIO]
     Query:
       name: q
       in: query
@@ -2668,6 +2810,13 @@ components:
     AlertLevel:
       type: string
       enum: [VENCIDO_SIN_CUMPLIR, ULTIMO_MOMENTO, ROJO, AMARILLO, OPORTUNIDAD]
+    BusinessDaysRemaining:
+      type: integer
+      minimum: 0
+      description: |
+        Días hábiles judiciales desde mañana hasta la fecha de alerta (`nominalDueDate`), inclusive, con el calendario del expediente
+        (departamento, inhábiles del estudio y suspensiones). `0` = vence hoy. Lo calcula el backend; el frontend no cuenta días hábiles.
+        Ausente si ya venció, si no hay vencimiento o si el calendario no cubre esa fecha.
 
     # ------------------------------------------------------------ Sesión y usuario
     Session:
@@ -3173,6 +3322,13 @@ components:
         nextDueAt:
           type: string
           format: date-time
+        nextDueAlertLevel:
+          $ref: '#/components/schemas/AlertLevel'
+          description: Nivel del próximo vencimiento propio. Ausente si vence después del umbral amarillo.
+        nextDueBusinessDaysRemaining:
+          $ref: '#/components/schemas/BusinessDaysRemaining'
+        responsibleUserName:
+          type: string
     Case:
       type: object
       additionalProperties: false
@@ -3238,6 +3394,21 @@ components:
             $ref: '#/components/schemas/CaseSummary'
         meta:
           $ref: '#/components/schemas/PageMeta'
+        statusCounts:
+          type: object
+          additionalProperties: false
+          required: [ACTIVO, PAUSADO, TERMINADO]
+          description: Cantidad por estado con los mismos filtros, sin tener en cuenta `status`.
+          properties:
+            ACTIVO:
+              type: integer
+              minimum: 0
+            PAUSADO:
+              type: integer
+              minimum: 0
+            TERMINADO:
+              type: integer
+              minimum: 0
     PartyFields:
       type: object
       required: [partyRole, name]
@@ -3424,6 +3595,11 @@ components:
         isOverdue:
           type: boolean
           description: Derivado (pendiente con el límite ya pasado); no se guarda.
+        alertLevel:
+          $ref: '#/components/schemas/AlertLevel'
+          description: Derivado, solo en pasos pendientes con vencimiento. Ausente si vence después del umbral amarillo.
+        businessDaysRemaining:
+          $ref: '#/components/schemas/BusinessDaysRemaining'
         responsibleRole:
           $ref: '#/components/schemas/ResponsibleRole'
         perspective:
@@ -3659,6 +3835,8 @@ components:
         graceLimitAt:
           type: string
           format: date-time
+        businessDaysRemaining:
+          $ref: '#/components/schemas/BusinessDaysRemaining'
         suggestedAction:
           type: string
           description: En oportunidades, ej. "Pedir que se tenga por no contestada la demanda".
@@ -3697,6 +3875,60 @@ components:
             $ref: '#/components/schemas/DashboardItem'
         calendarStatus:
           $ref: '#/components/schemas/CalendarCoverage'
+    DeadlineChangeNotice:
+      type: object
+      additionalProperties: false
+      required: [id, caseId, caseTitle, stepId, actionTitle, cause, direction, createdAt]
+      properties:
+        id:
+          $ref: '#/components/schemas/Id'
+        caseId:
+          $ref: '#/components/schemas/Id'
+        caseTitle:
+          type: string
+        caseNumber:
+          type: string
+        stepId:
+          $ref: '#/components/schemas/Id'
+        actionTitle:
+          type: string
+        cause:
+          type: string
+          enum: [CALENDARIO, INHABIL_ESTUDIO, SUSPENSION, HORARIO, ACTO_DE_REFERENCIA]
+        causeDetail:
+          type: string
+          maxLength: 300
+          description: Ej. "Asueto en San Isidro (Res. SCBA …)". Sale del cambio que disparó el recálculo; nunca texto libre de otro estudio.
+        previousLimitAt:
+          type: string
+          format: date-time
+        newLimitAt:
+          type: string
+          format: date-time
+          description: Ausente si el recálculo terminó en `CALENDARIO_NO_CARGADO`.
+        direction:
+          type: string
+          enum: [ATRASA, ADELANTA, SIN_FECHA]
+          description: '`ADELANTA` es el caso más peligroso y la UI lo muestra en rojo.'
+        createdAt:
+          type: string
+          format: date-time
+        seenAt:
+          type: string
+          format: date-time
+          description: Cuándo lo vio el usuario actual.
+    DeadlineChangeNoticePage:
+      type: object
+      additionalProperties: false
+      required: [items, meta]
+      properties:
+        items:
+          type: array
+          maxItems: 100
+          items:
+            $ref: '#/components/schemas/DeadlineChangeNotice'
+        meta:
+          $ref: '#/components/schemas/PageMeta'
 
     # ------------------------------------------------------------ Suscripción y facturación
     Plan:
@@ -4078,6 +4310,30 @@ components:
           type: string
           pattern: '^[a-f0-9]{64}$'
           description: SHA-256 de la planilla importada.
+        notes:
+          type: string
+        publishedByName:
+          type: string
+    FlowAdminSummary:
+      type: object
+      additionalProperties: false
+      required: [id, flowKind, name, versions]
+      properties:
+        id:
+          $ref: '#/components/schemas/Id'
+        flowKind:
+          type: string
+          enum: [PREJUDICIAL, JUDICIAL]
+        name:
+          type: string
+        proceduralRegimeCode:
+          type: string
+          enum: [PBA_LAB_LEY_11653, PBA_LAB_LEY_15057]
+        versions:
+          type: array
+          maxItems: 200
+          items:
+            $ref: '#/components/schemas/FlowVersionSummary'
     JurisdictionSchedule:
       type: object
       additionalProperties: false

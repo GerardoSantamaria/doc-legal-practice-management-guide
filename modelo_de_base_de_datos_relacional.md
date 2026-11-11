@@ -6,7 +6,7 @@ Este documento define la estructura de tablas para el motor de base de datos rel
 2. **Suscripciones y facturación:** planes por tramo de clientes, suscripciones, eventos de pago, datos fiscales, facturas electrónicas y aceptación de los documentos legales.
 3. **Catálogos del Sistema:** jurisdicciones, departamentos, fueros, regímenes procesales, tribunales y calendario judicial.
 4. **Motor de Flujos:** la "receta" procesal, versionada.
-5. **Datos del Estudio:** clientes, expedientes, partes y pasos (transaccional).
+5. **Datos del Estudio:** clientes, expedientes, partes y pasos (transaccional), avisos de cambio y exportaciones.
 6. **Auditoría:** registro inmutable de eventos.
 
 ---
@@ -694,6 +694,59 @@ Restricciones: `CHECK (0 <= red_business_days AND red_business_days < yellow_bus
 | `counterparty_alerts_enabled` | boolean, default true | Avisar cuando vence un plazo de la contraparte (oportunidad procesal). |
 | `updated_at` | timestamptz | |
 
+### Tabla: `deadline_change_notices` (avisos de vencimientos que cambiaron)
+
+*Un registro por cada vencimiento pendiente que movió un recálculo. Alimenta el aviso "tu vencimiento cambió" de Inicio y de la ficha (`listarAvisosCambio`).*
+
+| Campo | Tipo | Descripción |
+| ----- | ----- | ----- |
+| `id` | PK, UUID | |
+| `organization_id` | UUID | FK compuesta `(organization_id, case_step_id)` -> `case_steps (organization_id, id)`. |
+| `case_step_id` | UUID | |
+| `cause` | enum | `CALENDARIO`, `INHABIL_ESTUDIO`, `SUSPENSION`, `HORARIO`, `ACTO_DE_REFERENCIA`. |
+| `cause_detail` | text, nullable | Descripción del cambio que disparó el recálculo (ej. "Asueto en San Isidro"), armada por el sistema. |
+| `previous_limit_at` | timestamptz, nullable | Límite ordinario antes del recálculo. |
+| `new_limit_at` | timestamptz, nullable | Límite ordinario después. `null` si el recálculo terminó en `CALENDARIO_NO_CARGADO`. |
+| `direction` | enum | `ATRASA`, `ADELANTA` o `SIN_FECHA`. |
+| `calendar_version` | integer, nullable | Versión del calendario con la que se recalculó. |
+| `created_at` | timestamptz | |
+
+Reglas:
+* Solo se crea si cambia el límite ordinario o el de gracia; un recálculo que da lo mismo no genera aviso.
+* Si un mismo paso cambia dos veces antes de que alguien lo vea, quedan los dos avisos: el historial del cambio importa ante un reclamo.
+* Se borran a los 180 días (job de retención, BE-65).
+
+### Tabla: `deadline_change_notice_reads` (avisos vistos por usuario)
+
+| Campo | Tipo | Descripción |
+| ----- | ----- | ----- |
+| `organization_id` | UUID | Tenant; coherente con el aviso. |
+| `notice_id` | PK compuesta, FK -> `deadline_change_notices.id` | |
+| `user_id` | PK compuesta, FK -> `users.id` | Debe ser miembro del estudio. |
+| `seen_at` | timestamptz | |
+
+> **Por qué "visto" es por usuario:** el vencimiento es del expediente y lo ven todos los miembros. Si el primero que abre la app lo marcara como visto para todos, el abogado responsable podría no enterarse nunca del cambio.
+
+### Tabla: `data_exports` (exportaciones de los datos del estudio)
+
+| Campo | Tipo | Descripción |
+| ----- | ----- | ----- |
+| `id` | PK, UUID | |
+| `organization_id` | FK -> `organizations.id` | |
+| `requested_by` | FK -> `users.id` | Titular que la pidió. |
+| `format` | enum | `JSON` o `XLSX`. |
+| `status` | enum | `EN_PREPARACION`, `LISTA`, `VENCIDA`, `ERROR`. |
+| `storage_key` | text, nullable | Ubicación del archivo en el almacenamiento de objetos, con un nombre aleatorio. Nunca se expone; la descarga usa un enlace firmado. |
+| `link_expires_at` | timestamptz, nullable | 24 horas después de quedar `LISTA`. |
+| `downloaded_at` | timestamptz, nullable | El enlace es de un solo uso: si tiene valor, no se vuelve a entregar. |
+| `requested_at` | timestamptz | |
+| `completed_at` | timestamptz, nullable | |
+
+Reglas:
+* Máximo 3 pedidos por estudio por día (se cuentan en esta tabla y en el rate limiting).
+* Al vencer el enlace se borra el archivo y el registro pasa a `VENCIDA`. Los registros se conservan 30 días y después se borran.
+* Cada pedido y cada descarga quedan en `audit_events` (`DATOS_EXPORTADOS`).
+
 ---
 
 ## 6. Dominio: Auditoría
@@ -763,6 +816,10 @@ erDiagram
   case_steps ||--o{ case_step_checklist_items : "tilda"
   organizations |o--o| alert_settings : "configura"
   users ||--o{ notification_preferences : "elige"
+  case_steps ||--o{ deadline_change_notices : "avisa el cambio"
+  deadline_change_notices ||--o{ deadline_change_notice_reads : "se ve"
+  users ||--o{ deadline_change_notice_reads : "ve"
+  organizations ||--o{ data_exports : "exporta"
 ```
 
 1. **Multitenancy por estudio:** toda tabla con datos de un estudio tiene `organization_id`, y la app filtra siempre por el estudio de la sesión. Como defensa en profundidad:

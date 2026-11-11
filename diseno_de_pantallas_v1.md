@@ -358,7 +358,7 @@ Cada vencimiento se muestra con **color, ícono y texto** a la vez (nunca solo c
 - **Ruta:** `/admin/flujos`. **Quién:** ADMIN. **HU:** HU-12. **Maqueta:** `17_admin_matriz.html`.
 - **Importar** (`importarMatriz`): zona para arrastrar o elegir la planilla (.xlsx, hasta 5 MB). Muestra el nombre del archivo, la hora y el SHA-256 abreviado. Si hay errores (`obtenerImportacion`), los lista por hoja y fila con un mensaje que se entiende sin abrir el código.
 - **Publicar** (`publicarVersionFlujo`): quién del equipo legal validó (`approvedByLegal`) y qué cambió (`notes`). El botón queda deshabilitado mientras la importación tenga errores. Aclara que la versión publicada es inmutable y que los expedientes existentes conservan la suya.
-- **Versiones:** número, estado, fecha y quién validó (ver la sección 6: falta la operación para listarlas).
+- **Versiones:** número, estado, fecha y quién validó (`listarFlujos`).
 
 ### P18 Email del resumen diario
 
@@ -396,20 +396,21 @@ Todos siguen 3.4: título con la acción, explicación de qué pasa, motivo cuan
 | Dar de baja | Plan (T) | Motivo (opcional) | `darDeBaja` | Fechas de acceso, solo lectura y borrado; número de trámite. |
 | Arrepentimiento | Plan (T) | Ninguno | `arrepentirse` | Número de trámite e información de la devolución. |
 
-## 6. Lo que las pantallas piden y el contrato todavía no tiene
+## 6. Lo que las pantallas pidieron al contrato
 
-Al diseñar las pantallas aparecieron necesidades que el contrato de API (`api/openapi_v1.yaml`) todavía no cubre. Hay que resolverlas antes de construir esas partes:
+Al diseñar las pantallas aparecieron necesidades que el contrato de API (`api/openapi_v1.yaml`) no cubría. Ya están en el contrato y en el modelo de datos:
 
-| Pantalla | Necesidad | Propuesta |
+| Pantalla | Necesidad | Dónde quedó |
 | ----- | ----- | ----- |
-| P03, P07, P18 | Etiquetas "En N días hábiles" (3.10) | Un campo con los días hábiles que faltan en `DashboardItem` y en el resultado del paso. Hoy solo vienen el nivel y la fecha, y el frontend no puede contar días hábiles (el cálculo es solo del backend). |
-| P03, P07 | Avisos de "tu vencimiento cambió" (3.8) | Operaciones para listar los avisos sin ver y marcarlos como vistos, sobre la tabla `deadline_change_notices` que BE-46 pide agregar al modelo. |
-| P03 | Filtro "Míos / Todo el estudio" | Parámetro en `obtenerDashboard` (por ejemplo, `scope=MINE|ORGANIZATION`). Hoy devuelve "las alertas del usuario" sin definir si son las de sus expedientes o las de todo el estudio. |
+| P03, P07, P18 | Etiquetas "En N días hábiles" (3.10) | `businessDaysRemaining` en `DashboardItem` y `Step`, y `nextDueBusinessDaysRemaining` en `CaseSummary`. Lo calcula el backend; el frontend no cuenta días hábiles. Si falta (vencido, sin calendario), la etiqueta muestra la fecha. |
+| P04, P07 | Color del vencimiento en la lista y en el mapa | `alertLevel` en `Step` y `nextDueAlertLevel` en `CaseSummary`, con los mismos umbrales que el dashboard. |
+| P03, P07 | Avisos de "tu vencimiento cambió" (3.8) | `listarAvisosCambio` y `marcarAvisosVistos`, sobre las tablas `deadline_change_notices` y `deadline_change_notice_reads`. "Visto" es por usuario. |
+| P03 | Filtro "Míos / Todo el estudio" | Parámetro `scope=MIOS|ESTUDIO` en `obtenerDashboard` y `listarAvisosCambio`. Sin el parámetro: `MIOS` para titular y abogado, `ESTUDIO` para asistente. |
 | P04 | Filtros por responsable, departamento y rol | Parámetros `responsibleUserId`, `departmentId` y `representedRole` en `listarExpedientes`. |
-| P04 | Cantidad por pestaña (Activos 24, Pausados 2, Terminados 31) | Conteos por estado en la respuesta de `listarExpedientes`, o tres pedidos con `size=1` leyendo el total. |
-| Buscador global | Buscar también por tribunal, como piden los requisitos | Ampliar la búsqueda de `listarExpedientes` (hoy: carátula, número o cliente) al nombre del tribunal. Las maquetas ya lo incluyen en el texto del buscador. |
-| P17 | Lista de versiones publicadas de un flujo | Operación de back-office para listar las versiones (`flow_versions`) con fecha, quién publicó y quién validó. |
-| P11 | Estado del pedido de exportación al volver a la pantalla | Listar las exportaciones recientes del estudio, además de `obtenerExportacion` por ID, sobre la tabla `data_exports` que BE-63 pide agregar. |
+| P04 | Cantidad por pestaña (Activos 24, Pausados 2, Terminados 31) | `statusCounts` en la respuesta de `listarExpedientes`, con los mismos filtros sin tener en cuenta el estado. |
+| Buscador global | Buscar también por tribunal | La búsqueda de `listarExpedientes` incluye el nombre del tribunal. |
+| P17 | Lista de versiones publicadas de un flujo | `listarFlujos` (back-office), con cada versión, su fecha, quién publicó, las notas y si la validó el equipo legal. |
+| P11 | Estado del pedido de exportación al volver a la pantalla | `listarExportaciones` (últimos 7 días), sobre la tabla `data_exports`. |
 
 ## 7. Pendientes
 

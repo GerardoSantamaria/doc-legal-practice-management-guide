@@ -197,12 +197,11 @@ React como PWA está decidido. Lo demás es una propuesta: antes de agregar cada
 **Para qué:** que un vencimiento se lea igual en Inicio, la ficha, el calendario y los diálogos (3.10).
 **Incluye:**
 - Utilidades de fecha: las fechas sin hora del contrato (`YYYY-MM-DD`) se tratan como fechas locales, nunca como UTC; los instantes se muestran en la hora de Buenos Aires.
-- Textos relativos: "Hoy", "En N días hábiles", "Venció el …", "Último momento: hasta hoy a las 12:00". El frontend nunca cuenta días hábiles: el número tiene que venir del backend.
+- Textos relativos: "Hoy", "En N días hábiles", "Venció el …", "Último momento: hasta hoy a las 12:00". El frontend nunca cuenta días hábiles: usa `businessDaysRemaining` (o `nextDueBusinessDaysRemaining` en la lista) y, si no viene, muestra la fecha ("Mar 17/11").
 - Tarjeta con su franja de estado y todas las variantes de 3.10: aproximado (borde punteado y leyenda), a confirmar, cargado a mano, plazo modificado y "Cambió: antes … ahora …".
 
 **Lista cuando:** hay pruebas de cada variante y una prueba que corre con la zona horaria del sistema en UTC y muestra el mismo día.
 **Depende de:** FE-09.
-**Bloqueo:** el contrato todavía no trae los días hábiles que faltan (`DashboardItem` y `DeadlineResult` solo traen el nivel y la fecha; diseño de pantallas, sección 6). Hasta entonces, la etiqueta muestra la fecha ("Mar 17/11") en lugar de "En 3 días hábiles".
 
 ---
 
@@ -329,23 +328,22 @@ React como PWA está decidido. Lo demás es una propuesta: antes de agregar cada
 **Para qué:** completar Inicio con la lista corta de expedientes (P03).
 **Incluye:**
 - Tabla con los 10 de vencimiento más próximo (`listarExpedientes`, `sort=PROXIMO_VENCIMIENTO`) y "Ver todos".
-- Chips "Míos / Todo el estudio", solo en el plan Estudio.
+- Chips "Míos / Todo el estudio", solo en el plan Estudio: `scope=MIOS|ESTUDIO` en `obtenerDashboard` y `responsibleUserId` del usuario en `listarExpedientes`. El chip arranca en el valor por defecto del rol (asistente: "Todo el estudio").
 
 **Lista cuando:** la tabla coincide con la maqueta y el filtro cambia lo que muestran las tarjetas y la tabla.
 **Depende de:** FE-13, FE-24.
 **Backend:** BE-37, BE-50.
-**Bloqueo:** el filtro necesita el parámetro de `obtenerDashboard` que falta en el contrato (diseño de pantallas, sección 6). Hasta entonces, se muestra solo "Todo el estudio".
 
 ### FE-26 · Aviso "tu vencimiento cambió"
 **Para qué:** que nadie se pierda un vencimiento que se movió por un recálculo (3.8).
 **Incluye:**
-- Franja en Inicio ("Cambió 1 vencimiento por un asueto en San Isidro") con "Ver cambios", que lista antes y después.
-- Marca "Cambió: antes … ahora …" en la tarjeta y en el paso hasta que se ve; franja roja si el cambio adelanta un vencimiento.
+- Franja en Inicio ("Cambió 1 vencimiento por un asueto en San Isidro") con "Ver cambios", que lista antes y después (`listarAvisosCambio`, con el mismo `scope` que las tarjetas).
+- Marca "Cambió: antes … ahora …" en la tarjeta y en el paso hasta que se ve (`listarAvisosCambio` con `caseId` en la ficha); franja roja si `direction` es `ADELANTA`.
+- "Entendido" llama a `marcarAvisosVistos` con los IDs mostrados; solo los oculta para el usuario actual.
 
 **Lista cuando:** hay pruebas de un cambio que atrasa y de uno que adelanta, y el aviso desaparece después de verlo.
 **Depende de:** FE-24.
-**Backend:** BE-46.
-**Bloqueo:** faltan en el contrato las operaciones de avisos y en el modelo la tabla (diseño de pantallas, sección 6).
+**Backend:** BE-46, BE-49.
 
 ---
 
@@ -354,14 +352,14 @@ React como PWA está decidido. Lo demás es una propuesta: antes de agregar cada
 ### FE-27 · Lista de expedientes
 **Para qué:** encontrar y filtrar los expedientes del estudio (P04, HU-20).
 **Incluye:**
-- Pestañas Activos, Pausados y Terminados (`status`), filtro de texto (`q`), orden (`sort`) y paginación.
+- Pestañas Activos, Pausados y Terminados (`status`) con su cantidad (`statusCounts`), filtro de texto (`q`), orden (`sort`) y paginación.
+- Chips de responsable, departamento y rol (`responsibleUserId`, `departmentId`, `representedRole`); el de responsable, solo en el plan Estudio.
 - Filtros y página en la URL (`?estado=PAUSADO&q=perez&pagina=2`), para que sobrevivan a "Atrás" y se puedan compartir.
 - En celular, tarjetas y el chip "Clientes".
 
 **Lista cuando:** hay pruebas de que un filtro sobrevive a recargar la página y a "Atrás".
 **Depende de:** FE-13, FE-14, FE-20.
 **Backend:** BE-37.
-**Bloqueo:** los filtros de responsable, departamento y rol y los contadores por pestaña necesitan cambios en el contrato (diseño de pantallas, sección 6). Mientras tanto, esos chips no se muestran.
 
 ### FE-28 · Clientes: lista y detalle
 **Para qué:** ver y mantener los datos de cada cliente (P09, HU-16).
@@ -648,13 +646,13 @@ React como PWA está decidido. Lo demás es una propuesta: antes de agregar cada
 **Para qué:** que el titular se lleve sus datos cuando quiera (HU-45).
 **Incluye:**
 - "Exportar en Excel" y "Exportar en JSON" (`pedirExportacion`), estado del pedido (`obtenerExportacion`) consultado cada 10 segundos mientras la pantalla está abierta y descarga cuando está lista.
+- Al entrar, los pedidos de los últimos 7 días (`listarExportaciones`), para retomar uno en preparación.
 - Aviso ante el límite de 3 pedidos por día (429).
 - Disponible también en solo lectura.
 
 **Lista cuando:** hay pruebas de un pedido completo, del límite diario y del uso en solo lectura.
 **Depende de:** FE-49.
 **Backend:** BE-63.
-**Bloqueo:** para ver el estado al volver a la pantalla falta la lista de exportaciones (diseño de pantallas, sección 6).
 
 ### FE-53 · Facturación
 **Para qué:** que el titular cargue sus datos fiscales y descargue sus facturas (P12, HU-42, HU-44).
@@ -735,11 +733,11 @@ React como PWA está decidido. Lo demás es una propuesta: antes de agregar cada
 - Zona de subida: solo `.xlsx` y hasta 5 MB, controlado antes de enviar (el control real lo hace el backend). `importarMatriz` con `multipart/form-data`.
 - Resultado (`obtenerImportacion`): archivo, hora, SHA-256 abreviado y errores por hoja y fila, como texto.
 - Publicar (`publicarVersionFlujo`): `approvedByLegal` y `notes`, deshabilitado con errores; aviso de versión inmutable.
+- Tabla de versiones por flujo (`listarFlujos`): número, estado, fecha, quién publicó y si la validó el equipo legal.
 
 **Lista cuando:** hay pruebas de un archivo de 6 MB (rechazado sin enviar), de una importación con errores y de una publicación.
 **Depende de:** FE-10, FE-57.
-**Backend:** BE-29, BE-30, BE-31.
-**Bloqueo:** la tabla de versiones necesita la operación que falta en el contrato (diseño de pantallas, sección 6).
+**Backend:** BE-28, BE-29, BE-30, BE-31.
 
 ### FE-60 · Catálogos: tribunales, regímenes y horarios
 **Para qué:** mantener los catálogos que usa el alta de expedientes (HU-10).
@@ -825,12 +823,12 @@ React como PWA está decidido. Lo demás es una propuesta: antes de agregar cada
 | 1 · Componentes | FE-09 a FE-14 | — |
 | 2 · Acceso y estudio | FE-15 a FE-19 | Cliente OAuth de Google (para integrar) |
 | 3 · Transversales y PWA | FE-20 a FE-23 | Logo final para los íconos de la PWA |
-| 4 · Inicio | FE-24 a FE-26 | Filtro "Míos" y avisos de cambio en el contrato |
-| 5 · Clientes y expedientes | FE-27 a FE-34 | Filtros y contadores de expedientes en el contrato |
+| 4 · Inicio | FE-24 a FE-26 | — |
+| 5 · Clientes y expedientes | FE-27 a FE-34 | — |
 | 6 · Ficha | FE-35 a FE-46 | — |
 | 7 · Calendario | FE-47 a FE-48 | — |
-| 8 · Cuenta | FE-49 a FE-56 | Proveedor de pagos y precios; lista de exportaciones en el contrato |
-| 9 · Back-office | FE-57 a FE-60 | Subdominio del back-office; lista de versiones del flujo en el contrato |
+| 8 · Cuenta | FE-49 a FE-56 | Proveedor de pagos y precios |
+| 9 · Back-office | FE-57 a FE-60 | Subdominio del back-office |
 | 10 · Emails | FE-61 | Dominio propio |
 | 11 · Cierre | FE-62 a FE-65 | Staging con el backend desplegado |
 
@@ -841,7 +839,7 @@ React como PWA está decidido. Lo demás es una propuesta: antes de agregar cada
 - El back-office (bloque 9) no depende de las pantallas de los estudios: lo puede llevar otra persona desde que está el bloque 2.
 - La única excepción al orden de los bloques es FE-34 (alta en curso), que espera a la calculadora de la ficha (FE-37 y FE-38).
 
-**Huecos del contrato que frenan tareas:** filtro "Míos" (FE-25), avisos de cambio (FE-26), filtros y contadores de expedientes (FE-27), lista de exportaciones (FE-52), lista de versiones del flujo (FE-59) y días hábiles que faltan (FE-14). Están en la sección 6 de `diseno_de_pantallas_v1.md`; conviene resolverlos en el contrato antes de empezar el bloque 4.
+**Contrato:** los huecos que encontró el diseño (filtro "Míos", avisos de cambio, filtros y contadores de expedientes, exportaciones, versiones del flujo y días hábiles que faltan) ya están en `api/openapi_v1.yaml`; la sección 6 de `diseno_de_pantallas_v1.md` dice dónde quedó cada uno. Ninguna tarea del frontend espera cambios del contrato.
 
 ```mermaid
 flowchart LR
