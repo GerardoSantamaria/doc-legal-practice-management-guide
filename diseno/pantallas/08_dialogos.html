@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Foja · Diálogos</title>
+<link rel="stylesheet" href="base.css">
+<style>
+  body { background: #5C6B7E; }
+  .lamina .rotulo-pieza { color: #fff; }
+  .dialogo { max-width: none; }
+  .dia { display: grid; grid-template-columns: 110px 1fr; gap: 8px; padding: 6px 0; border-bottom: 1px solid var(--color-borde); font-size: var(--texto-sm); }
+  .dia:last-child { border-bottom: 0; }
+  .dia .no { color: var(--color-texto-terciario); }
+</style>
+</head>
+<body>
+<div class="lamina">
+
+  <div>
+    <div class="rotulo-pieza">1 · Avanzar etapa (con bifurcación)</div>
+    <div class="dialogo" role="dialog" aria-labelledby="d1">
+      <div class="cab"><h3 id="d1">Avanzar etapa</h3><i class="i i-20 ic-cerrar" aria-label="Cerrar"></i></div>
+      <div class="cuerpo-d pila">
+        <p class="sec">Traslado del dictamen pericial. ¿Qué pasó?</p>
+        <div class="pila-sm">
+          <div class="opcion sel"><span class="radio"></span><div><div class="fuerte">Se presentaron observaciones al dictamen</div><div class="sec">Abre: Respuesta del perito a las observaciones (Tribunal)</div></div></div>
+          <div class="opcion"><span class="radio"></span><div><div class="fuerte">No se observó el dictamen</div><div class="sec">Abre: Fijación de la audiencia de vista de causa (Tribunal)</div></div></div>
+        </div>
+        <div class="campo">
+          <label>Fecha y hora del cargo <span class="ter">(opcional)</span></label>
+          <div class="control num">Lun 16/11/2026 10:42<span class="derecha"><i class="i ic-calendario"></i></span></div>
+          <span class="ayuda">Es tu prueba de que se presentó en término.</span>
+        </div>
+      </div>
+      <div class="pie-d"><span class="btn btn-secundario">Cancelar</span><span class="btn btn-primario">Avanzar</span></div>
+    </div>
+  </div>
+
+  <div>
+    <div class="rotulo-pieza">2 · Lo cumplí (desde un vencido del dashboard)</div>
+    <div class="dialogo" role="dialog" aria-labelledby="d2">
+      <div class="cab"><h3 id="d2">Lo cumplí</h3><i class="i i-20 ic-cerrar"></i></div>
+      <div class="cuerpo-d pila">
+        <p class="sec">Contestar la reconvención · GÓMEZ C/ BETA SRL · venció el Mar 10/11/2026 a las 14:00, con gracia hasta el Mié 11/11 a las 12:00.</p>
+        <div class="campo">
+          <label>Fecha y hora del cargo</label>
+          <div class="control num">Mié 11/11/2026 09:58<span class="derecha"><i class="i ic-calendario"></i></span></div>
+        </div>
+        <div class="franja cumplido"><i class="i i-20 ic-cumplido"></i><div>Se presentó dentro del plazo de gracia.</div></div>
+        <p class="sec">Después vas a elegir cómo sigue el expediente.</p>
+      </div>
+      <div class="pie-d"><span class="btn btn-secundario">Cancelar</span><span class="btn btn-primario">Guardar y continuar</span></div>
+    </div>
+  </div>
+
+  <div>
+    <div class="rotulo-pieza">3 · No se cumplió</div>
+    <div class="dialogo" role="dialog" aria-labelledby="d3">
+      <div class="cab"><h3 id="d3">No se cumplió</h3><i class="i i-20 ic-cerrar"></i></div>
+      <div class="cuerpo-d pila">
+        <p class="sec">Subsanar defectos de la demanda · LÓPEZ C/ OMEGA SA · venció el Lun 09/11/2026.</p>
+        <div class="campo">
+          <label>Motivo</label>
+          <div class="control area vacio">Contanos qué pasó</div>
+          <span class="ayuda">No incluyas datos de salud ni otros datos sensibles.</span>
+        </div>
+        <div class="campo">
+          <span class="rotulo">¿Cómo sigue?</span>
+          <div class="opcion sel"><span class="radio"></span><div><div class="fuerte">El tribunal resuelve sobre la demanda</div><div class="sec">Salida prevista en el flujo para este caso</div></div></div>
+          <div class="opcion"><span class="radio"></span><div>Solo registrarlo, sin avanzar</div></div>
+        </div>
+      </div>
+      <div class="pie-d"><span class="btn btn-secundario">Cancelar</span><span class="btn btn-peligro-lleno btn">Registrar que no se cumplió</span></div>
+    </div>
+  </div>
+
+  <div>
+    <div class="rotulo-pieza">4 · Retroceder etapa (con actividad)</div>
+    <div class="dialogo" role="dialog" aria-labelledby="d4">
+      <div class="cab"><h3 id="d4">Retroceder etapa</h3><i class="i i-20 ic-cerrar"></i></div>
+      <div class="cuerpo-d pila">
+        <p>"Producción de la prueba pericial" vuelve a estar pendiente. Se anulan los pasos que abrió:</p>
+        <div class="franja atencion"><i class="i i-20 ic-alerta"></i><div><span class="fuerte">Traslado del dictamen pericial</span> tiene actividad: 1 ítem del checklist tildado y el Día Cero cargado. Se conserva en el historial.</div></div>
+        <div class="campo">
+          <label>Motivo</label>
+          <div class="control area">Lo avancé por error: el dictamen todavía no fue notificado.</div>
+        </div>
+        <div class="fila"><span class="check si"><i class="i ic-tilde" style="width:12px;height:12px"></i></span><span>Entiendo que se anula ese paso con su actividad</span></div>
+      </div>
+      <div class="pie-d"><span class="btn btn-secundario">Cancelar</span><span class="btn btn-peligro-lleno btn">Retroceder</span></div>
+    </div>
+  </div>
+
+  <div>
+    <div class="rotulo-pieza">5 · Agregar plazo suelto</div>
+    <div class="dialogo" role="dialog" aria-labelledby="d5">
+      <div class="cab"><h3 id="d5">Agregar plazo suelto</h3><i class="i i-20 ic-cerrar"></i></div>
+      <div class="cuerpo-d pila">
+        <div class="campo">
+          <label>Qué hay que hacer</label>
+          <div class="control">Acompañar documental intimada</div>
+          <span class="ayuda">No incluyas datos de salud ni otros datos sensibles.</span>
+        </div>
+        <div class="grilla-2">
+          <div class="campo"><label>Tipo de plazo</label><div class="control">Días hábiles judiciales<span class="derecha"><i class="i ic-abajo"></i></span></div></div>
+          <div class="campo"><label>Cantidad</label><div class="control num">3</div></div>
+          <div class="campo"><label>Día Cero</label><div class="control num">Lun 09/11/2026<span class="derecha"><i class="i ic-calendario"></i></span></div></div>
+          <div class="campo"><span class="rotulo">Plazo de gracia</span><div class="opciones"><div class="opcion sel"><span class="radio"></span>Sí</div><div class="opcion"><span class="radio"></span>No</div></div></div>
+        </div>
+        <div class="resultado"><div class="grande" style="font-size:var(--texto-md)">Vence el Lun 16/11/2026 a las 14:00</div><div class="sec">Asociado a: Traslado del dictamen pericial</div></div>
+      </div>
+      <div class="pie-d"><span class="btn btn-secundario">Cancelar</span><span class="btn btn-primario">Agregar</span></div>
+    </div>
+  </div>
+
+  <div>
+    <div class="rotulo-pieza">6 · ¿Por qué vence ese día?</div>
+    <div class="dialogo" role="dialog" aria-labelledby="d6">
+      <div class="cab"><h3 id="d6">¿Por qué vence ese día?</h3><i class="i i-20 ic-cerrar"></i></div>
+      <div class="cuerpo-d pila">
+        <p class="sec">5 días hábiles judiciales desde el Día Cero (Lun 09/11/2026). Se cuenta desde el día hábil siguiente.</p>
+        <div>
+          <div class="dia num"><span>Mar 10/11</span><span>Día 1</span></div>
+          <div class="dia num"><span>Mié 11/11</span><span>Día 2</span></div>
+          <div class="dia num"><span>Jue 12/11</span><span>Día 3</span></div>
+          <div class="dia num no"><span>Vie 13/11</span><span>No se cuenta: asueto en San Isidro (Res. SCBA de ejemplo)</span></div>
+          <div class="dia num no"><span>Sáb 14 y Dom 15</span><span>No se cuentan: fin de semana</span></div>
+          <div class="dia num"><span>Lun 16/11</span><span>Día 4</span></div>
+          <div class="dia num fuerte"><span>Mar 17/11</span><span>Día 5: vence a las 14:00 (cierre del horario judicial)</span></div>
+        </div>
+        <div class="resultado"><div class="sec num">Plazo de gracia: Mié 18/11/2026 hasta las 12:00 (primeras cuatro horas del día hábil siguiente).</div></div>
+        <p class="ter">Calendario oficial, versión 14 · calculado el 11/11/2026 09:02</p>
+      </div>
+      <div class="pie-d"><span class="btn btn-primario">Entendido</span></div>
+    </div>
+  </div>
+
+  <div>
+    <div class="rotulo-pieza">7 · Cargar suspensión de plazos</div>
+    <div class="dialogo" role="dialog" aria-labelledby="d7">
+      <div class="cab"><h3 id="d7">Cargar suspensión de plazos</h3><i class="i i-20 ic-cerrar"></i></div>
+      <div class="cuerpo-d pila">
+        <div class="grilla-2">
+          <div class="campo"><label>Desde</label><div class="control num">Lun 23/11/2026<span class="derecha"><i class="i ic-calendario"></i></span></div></div>
+          <div class="campo"><label>Hasta</label><div class="control num">Vie 04/12/2026<span class="derecha"><i class="i ic-calendario"></i></span></div></div>
+        </div>
+        <div class="campo"><label>Motivo</label><div class="control">Acuerdo de partes<span class="derecha"><i class="i ic-abajo"></i></span></div></div>
+        <div class="campo"><label>Referencia <span class="ter">(opcional)</span></label><div class="control vacio">Ej: escrito del 20/11 y proveído del 21/11</div></div>
+        <div class="franja info"><i class="i i-20 ic-info"></i><div>Se van a recalcular los plazos pendientes de este expediente. Te mostramos qué cambió.</div></div>
+      </div>
+      <div class="pie-d"><span class="btn btn-secundario">Cancelar</span><span class="btn btn-primario">Cargar suspensión</span></div>
+    </div>
+  </div>
+
+  <div>
+    <div class="rotulo-pieza">8 · Cambiar el plazo legal</div>
+    <div class="dialogo" role="dialog" aria-labelledby="d8">
+      <div class="cab"><h3 id="d8">Cambiar el plazo</h3><i class="i i-20 ic-cerrar"></i></div>
+      <div class="cuerpo-d pila">
+        <div class="grilla-2">
+          <div class="campo"><span class="rotulo">Plazo legal</span><div class="control num deshabilitado" style="background:var(--color-fondo)">5 días hábiles</div></div>
+          <div class="campo"><label>Plazo a usar</label><div class="control num foco">8 días hábiles</div></div>
+        </div>
+        <div class="campo">
+          <label>Motivo del cambio</label>
+          <div class="control con-error vacio">Ej: ampliación por distancia</div>
+          <span class="error"><i class="i ic-alerta"></i>Contanos por qué cambiás el plazo legal.</span>
+        </div>
+        <p class="sec">El vencimiento se va a marcar como "Plazo modificado a mano".</p>
+      </div>
+      <div class="pie-d"><span class="btn btn-secundario">Cancelar</span><span class="btn btn-primario">Guardar</span></div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

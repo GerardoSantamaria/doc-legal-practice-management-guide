@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Foja Admin · Calendario</title>
+<link rel="stylesheet" href="base.css">
+<style>
+  .lateral.admin { background: var(--color-tinta-900); border-color: var(--color-tinta-900); }
+  .lateral.admin .nav-item { color: var(--color-tinta-100); }
+  .lateral.admin .nav-item.activo { background: rgba(255,255,255,.1); color: #fff; }
+  .impacto { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+  .impacto .cifra { font-size: var(--texto-2xl); font-weight: var(--peso-titulo); font-variant-numeric: tabular-nums; }
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="lateral admin">
+    <div class="marca"><img src="../isotipo.svg" alt="" width="32" height="32" style="outline:1px solid var(--color-tinta-200);border-radius:10px"><span style="color:#fff;font-weight:700">Back-office</span></div>
+    <a class="nav-item activo" href="16_admin_calendario.html"><i class="i i-20 ic-calendario"></i>Calendario</a>
+    <a class="nav-item" href="17_admin_matriz.html"><i class="i i-20 ic-documento"></i>Flujos y matriz</a>
+    <a class="nav-item" href="#"><i class="i i-20 ic-tribunal"></i>Tribunales y regímenes</a>
+    <a class="nav-item" href="#"><i class="i i-20 ic-reloj"></i>Horarios</a>
+    <div class="pie" style="border-color:rgba(255,255,255,.15)"><div class="fila" style="color:var(--color-tinta-100);font-size:var(--texto-sm)"><i class="i ic-escudo"></i>Admin · sesión de 1 hora</div></div>
+  </aside>
+  <div class="principal">
+    <header class="superior">
+      <span class="etiqueta e-vencido"><i class="i ic-escudo"></i>Entorno: producción</span>
+      <span class="sec">Sin acceso a datos de los estudios</span>
+      <div class="avatar" style="margin-left:auto">AD</div>
+    </header>
+
+    <main class="contenido">
+      <div class="encabezado entre">
+        <div><h1>Calendario judicial</h1><p class="sec" style="margin-top:4px">Provincia de Buenos Aires · cobertura oficial hasta el 31/12/2026 · versión 14</p></div>
+        <span class="btn btn-secundario">Cobertura y validación</span>
+      </div>
+
+      <div class="grilla-2" style="align-items:start;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr)">
+        <section class="panel pila">
+          <h3>Nuevo cambio</h3>
+          <table class="tabla">
+            <thead><tr><th>Fecha</th><th>Tipo</th><th>Alcance</th><th>Referencia</th></tr></thead>
+            <tbody>
+              <tr><td>Vie 13/11/2026</td><td>Asueto</td><td>Departamento San Isidro</td><td>Res. SCBA (ejemplo)</td></tr>
+            </tbody>
+          </table>
+          <span class="btn btn-secundario btn-sm" style="align-self:flex-start"><i class="i ic-mas"></i>Agregar día</span>
+          <div class="campo"><label>Motivo del cambio</label><div class="control">Asueto dispuesto por la SCBA para San Isidro</div></div>
+          <div class="fila" style="justify-content:flex-end"><span class="btn btn-primario">Ver impacto</span></div>
+        </section>
+
+        <section class="panel pila">
+          <h3>Impacto antes de publicar</h3>
+          <div class="impacto">
+            <div class="panel"><div class="cifra">37</div><div class="sec">pasos pendientes cambian</div></div>
+            <div class="panel"><div class="cifra" style="color:var(--color-cumplido)">0</div><div class="sec">se adelantan</div></div>
+            <div class="panel" style="border-color:var(--color-vencido)"><div class="cifra" style="color:var(--color-vencido)">37</div><div class="sec">se atrasan</div></div>
+          </div>
+          <div class="franja vencido"><i class="i i-20 ic-alerta"></i><div><span class="fuerte">Este cambio atrasa 37 vencimientos.</span> Es el error más peligroso: el abogado va a creer que tiene más tiempo. Verificá la referencia antes de publicar.</div></div>
+          <p class="ter">Se muestran solo cantidades por departamento: el back-office no ve expedientes ni estudios.</p>
+          <table class="tabla">
+            <thead><tr><th>Departamento</th><th>Cambian</th><th>Se atrasan</th></tr></thead>
+            <tbody><tr><td>San Isidro</td><td>37</td><td>37</td></tr></tbody>
+          </table>
+          <div class="fila"><span class="check si"><i class="i ic-tilde" style="width:12px;height:12px"></i></span><span>Verifiqué la norma y confirmo que los atrasos son correctos</span></div>
+          <div class="fila" style="justify-content:flex-end"><span class="btn btn-secundario">Cancelar</span><span class="btn btn-primario">Publicar cambio</span></div>
+        </section>
+      </div>
+    </main>
+  </div>
+</div>
+</body>
+</html>

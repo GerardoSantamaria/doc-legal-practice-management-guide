@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Foja · Cuenta · Equipo</title>
+<link rel="stylesheet" href="base.css">
+</head>
+<body>
+<div class="app">
+  <aside class="lateral">
+    <div class="marca"><img src="../logo_horizontal.svg" alt="Foja"></div>
+    <a class="nav-item" href="03_inicio.html"><i class="i i-20 ic-inicio"></i>Inicio<span class="contador">2</span></a>
+    <a class="nav-item" href="04_expedientes.html"><i class="i i-20 ic-expedientes"></i>Expedientes</a>
+    <a class="nav-item" href="09_clientes.html"><i class="i i-20 ic-clientes"></i>Clientes</a>
+    <a class="nav-item" href="10_calendario.html"><i class="i i-20 ic-calendario"></i>Calendario</a>
+    <a class="nav-item activo" href="11_cuenta_plan.html"><i class="i i-20 ic-cuenta"></i>Cuenta</a>
+    <div class="pie"><div class="selector-estudio"><i class="i ic-estudio"></i><div><div class="fuerte">Estudio Zena</div><div class="ter xs">Plan Estudio · Titular</div></div><i class="i ic-abajo" style="margin-left:auto"></i></div></div>
+  </aside>
+  <div class="principal">
+    <header class="superior">
+      <div class="buscador"><i class="i ic-buscar"></i>Buscar por cliente, carátula, número o tribunal</div>
+      <a class="btn btn-primario btn-sm" style="margin-left:auto" href="05_nuevo_expediente.html"><i class="i ic-mas"></i>Nuevo expediente</a>
+      <div class="avatar">GZ</div>
+    </header>
+
+    <main class="contenido">
+      <div class="encabezado"><h1>Cuenta</h1></div>
+      <div class="pestanas" role="tablist">
+        <a class="pestana" href="11_cuenta_plan.html">Plan</a>
+        <a class="pestana activa" href="13_cuenta_equipo.html">Equipo</a>
+        <a class="pestana" href="12_cuenta_facturacion.html">Facturación</a>
+        <a class="pestana" href="14_cuenta_avisos.html">Perfil y avisos</a>
+      </div>
+
+      <section class="panel pila" style="margin-bottom:16px">
+        <div class="entre">
+          <div><h3>Miembros del estudio</h3><p class="sec num">3 de 3 usuarios incluidos · cada usuario adicional: $ [precio] por mes</p></div>
+          <span class="btn btn-primario"><i class="i ic-mas"></i>Invitar</span>
+        </div>
+        <table class="tabla">
+          <thead><tr><th>Nombre</th><th>Email</th><th>Rol</th><th>Estado</th><th></th></tr></thead>
+          <tbody>
+            <tr><td class="titulo-fila">Gerardo Zena (vos)</td><td>gerardo@ejemplo.com</td><td>Titular</td><td><span class="etiqueta e-cumplido">Activo</span></td><td></td></tr>
+            <tr><td class="titulo-fila">María Sosa</td><td>maria@ejemplo.com</td><td>Abogado <i class="i ic-abajo"></i></td><td><span class="etiqueta e-cumplido">Activo</span></td><td><span class="btn btn-peligro btn-sm">Quitar</span></td></tr>
+            <tr><td class="titulo-fila">—</td><td>asistente@ejemplo.com</td><td>Asistente <i class="i ic-abajo"></i></td><td><span class="etiqueta e-neutro"><i class="i ic-email"></i>Invitación enviada · vence el 18/11</span></td><td><span class="btn btn-texto btn-sm">Reenviar</span><span class="btn btn-peligro btn-sm">Cancelar</span></td></tr>
+          </tbody>
+        </table>
+        <div class="grilla-3 sec" style="gap:12px">
+          <div><span class="fuerte">Titular:</span> todo, incluido el plan, la facturación, el equipo y la exportación.</div>
+          <div><span class="fuerte">Abogado:</span> clientes, expedientes y plazos; no ve la facturación.</div>
+          <div><span class="fuerte">Asistente:</span> carga y actualiza plazos; no registra "no se cumplió" ni elimina.</div>
+        </div>
+      </section>
+
+      <section class="panel pila">
+        <div><h3>Mis dispositivos</h3><p class="sec">Tu plan permite 3 dispositivos con sesión abierta. Si entrás desde un cuarto, cerramos la sesión del más antiguo.</p></div>
+        <table class="tabla">
+          <thead><tr><th>Dispositivo</th><th>Último uso</th><th></th></tr></thead>
+          <tbody>
+            <tr><td><i class="i i-20 ic-compu"></i> Chrome en macOS <span class="etiqueta e-actual" style="margin-left:8px">Este dispositivo</span></td><td>Ahora</td><td></td></tr>
+            <tr><td><i class="i i-20 ic-celular"></i> Foja en Android</td><td>Hoy 07:02</td><td><span class="btn btn-peligro btn-sm">Cerrar sesión</span></td></tr>
+            <tr><td><i class="i i-20 ic-compu"></i> Edge en Windows</td><td>Lun 02/11/2026</td><td><span class="btn btn-peligro btn-sm">Cerrar sesión</span></td></tr>
+          </tbody>
+        </table>
+      </section>
+    </main>
+  </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Foja · Ingresar</title>
+<link rel="stylesheet" href="base.css">
+<style>
+  .ingreso { min-height: 100vh; display: grid; grid-template-columns: 1.1fr 1fr; }
+  .lado-marca { background: var(--color-tinta-700); color: #fff; padding: 64px; display: flex; flex-direction: column; justify-content: space-between; }
+  .lado-marca h1 { font-size: 40px; max-width: 460px; margin-top: 48px; }
+  .lado-marca .beneficios { list-style: none; padding: 0; margin: 32px 0 0; display: grid; gap: 16px; max-width: 460px; }
+  .lado-marca .beneficios li { display: flex; gap: 12px; color: var(--color-tinta-100); }
+  .lado-marca .beneficios .i { color: #fff; margin-top: 3px; }
+  .lado-form { display: grid; place-items: center; padding: 32px; }
+  .caja { width: 100%; max-width: 400px; }
+  @media (max-width: 760px) {
+    .ingreso { grid-template-columns: 1fr; }
+    .lado-marca { padding: 32px 24px; }
+    .lado-marca h1 { font-size: 28px; margin-top: 24px; }
+    .lado-marca .pie-marca { display: none; }
+    .lado-form { place-items: start center; padding: 32px 24px; }
+  }
+</style>
+</head>
+<body>
+<div class="ingreso">
+  <section class="lado-marca">
+    <div>
+      <div class="fila" style="gap:12px">
+        <img src="../isotipo.svg" alt="" width="44" height="44" style="outline:1px solid var(--color-tinta-200);border-radius:14px">
+        <span style="font-size:32px;font-weight:700;letter-spacing:-1px">foja</span>
+      </div>
+      <h1>Cada plazo de tus expedientes laborales, a tiempo.</h1>
+      <ul class="beneficios">
+        <li><i class="i i-20 ic-calendario"></i><span>Calcula los vencimientos con el calendario judicial de la Provincia de Buenos Aires.</span></li>
+        <li><i class="i i-20 ic-expedientes"></i><span>Te guía por las etapas del proceso laboral, de la etapa previa a la ejecución.</span></li>
+        <li><i class="i i-20 ic-email"></i><span>Te avisa cada mañana qué vence, también por email.</span></li>
+      </ul>
+    </div>
+    <p class="pie-marca" style="color:var(--color-tinta-200);font-size:var(--texto-sm)">Fuero laboral · Provincia de Buenos Aires</p>
+  </section>
+
+  <section class="lado-form">
+    <div class="caja pila">
+      <h2>Ingresá a tu cuenta</h2>
+      <p class="sec">Usamos tu cuenta de Google: no necesitás otra contraseña. Te recomendamos activar la verificación en dos pasos de Google.</p>
+      <a class="btn btn-google btn-bloque" href="02_bienvenida.html"><span class="g">G</span>Continuar con Google</a>
+
+      <div class="franja vencido" role="alert">
+        <i class="i i-20 ic-alerta"></i>
+        <div>No pudimos ingresar con esa cuenta. Probá de nuevo; si sigue pasando, escribinos a soporte.</div>
+      </div>
+      <p class="ter xs">Ejemplo del mensaje de error, que es siempre el mismo sin importar la causa.</p>
+
+      <hr class="separador">
+      <p class="sec">Si es tu primera vez, después de ingresar vas a revisar y aceptar los <a href="#">Términos y condiciones</a> y la <a href="#">Política de privacidad</a>, y vas a poder probar Foja gratis durante 30 días, sin tarjeta.</p>
+      <p class="sec"><a href="#">¿Problemas para ingresar?</a> · <a href="#">Ayuda</a></p>
+    </div>
+  </section>
+</div>
+</body>
+</html>

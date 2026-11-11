@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Foja · Nuevo expediente</title>
+<link rel="stylesheet" href="base.css">
+<style>
+  .alta { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 24px; align-items: start; }
+  @media (max-width: 760px) { .alta { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="lateral">
+    <div class="marca"><img src="../logo_horizontal.svg" alt="Foja"></div>
+    <a class="nav-item" href="03_inicio.html"><i class="i i-20 ic-inicio"></i>Inicio<span class="contador">2</span></a>
+    <a class="nav-item activo" href="04_expedientes.html"><i class="i i-20 ic-expedientes"></i>Expedientes</a>
+    <a class="nav-item" href="09_clientes.html"><i class="i i-20 ic-clientes"></i>Clientes</a>
+    <a class="nav-item" href="10_calendario.html"><i class="i i-20 ic-calendario"></i>Calendario</a>
+    <a class="nav-item" href="11_cuenta_plan.html"><i class="i i-20 ic-cuenta"></i>Cuenta</a>
+    <div class="pie"><div class="selector-estudio"><i class="i ic-estudio"></i><div><div class="fuerte">Estudio Zena</div><div class="ter xs">Plan Estudio · Titular</div></div><i class="i ic-abajo" style="margin-left:auto"></i></div></div>
+  </aside>
+  <div class="principal">
+    <header class="superior">
+      <div class="buscador"><i class="i ic-buscar"></i>Buscar por cliente, carátula, número o tribunal</div>
+      <div class="avatar" style="margin-left:auto">GZ</div>
+    </header>
+    <div class="barra-movil"><a href="04_expedientes.html" aria-label="Cancelar"><i class="i i-24 ic-cerrar"></i></a><span class="fuerte">Nuevo expediente</span></div>
+
+    <main class="contenido">
+      <div class="encabezado oculto-movil">
+        <div class="migas"><a href="04_expedientes.html">Expedientes</a> / Nuevo</div>
+        <h1>Nuevo expediente</h1>
+      </div>
+
+      <div class="pasos">
+        <div class="paso hecho"><span class="n"><i class="i ic-tilde"></i></span><span class="texto">Cliente</span><span class="linea"></span></div>
+        <div class="paso actual"><span class="n">2</span><span class="texto">Proceso</span><span class="linea"></span></div>
+        <div class="paso"><span class="n">3</span><span class="texto">Situación actual</span></div>
+      </div>
+
+      <div class="alta">
+        <div class="panel pila">
+          <h3>Datos del proceso</h3>
+          <div class="formulario">
+            <div class="campo ancho">
+              <label>Carátula</label>
+              <div class="control">PÉREZ C/ ACME SA S/ DESPIDO</div>
+            </div>
+            <div class="campo">
+              <label>Número de expediente <span class="ter">(opcional)</span></label>
+              <div class="control vacio">Ej: 12345/2026</div>
+            </div>
+            <div class="campo">
+              <label>Número de receptoría <span class="ter">(opcional)</span></label>
+              <div class="control vacio">Ej: SI-1234-2026</div>
+            </div>
+            <div class="campo">
+              <label>Jurisdicción</label>
+              <div class="control">Provincia de Buenos Aires<span class="derecha"><i class="i ic-abajo"></i></span></div>
+              <span class="ayuda">CABA y Nación, próximamente.</span>
+            </div>
+            <div class="campo">
+              <label>Departamento judicial</label>
+              <div class="control">San Isidro<span class="derecha"><i class="i ic-abajo"></i></span></div>
+            </div>
+            <div class="campo ancho">
+              <label>¿En qué etapa está?</label>
+              <div class="opciones">
+                <div class="opcion" style="flex:1"><span class="radio"></span><div><div class="fuerte">Etapa previa</div><div class="sec">Todavía no se interpuso la demanda</div></div></div>
+                <div class="opcion sel" style="flex:1"><span class="radio"></span><div><div class="fuerte">Juicio</div><div class="sec">La demanda ya está interpuesta o se interpone ahora</div></div></div>
+              </div>
+            </div>
+            <div class="campo ancho">
+              <label>Tribunal o juzgado</label>
+              <div class="control foco">Tribunal de Trabajo Nº 2 de San Isidro<span class="derecha"><i class="i ic-abajo"></i></span></div>
+            </div>
+            <div class="ancho franja info">
+              <i class="i i-20 ic-tribunal"></i>
+              <div><span class="fuerte">Régimen: Ley 11.653.</span> Se usa el flujo "Laboral PBA - Ley 11.653", versión 1. Lo determinamos por el tribunal elegido.</div>
+            </div>
+            <div class="campo">
+              <span class="rotulo">Rol que representás</span>
+              <div class="opciones">
+                <div class="opcion sel" style="flex:1"><span class="radio"></span>Actora</div>
+                <div class="opcion" style="flex:1"><span class="radio"></span>Demandada</div>
+              </div>
+            </div>
+            <div class="campo">
+              <label>Abogado responsable</label>
+              <div class="control">Gerardo Zena (vos)<span class="derecha"><i class="i ic-abajo"></i></span></div>
+              <span class="ayuda">Recibe los avisos de este expediente.</span>
+            </div>
+          </div>
+          <hr class="separador">
+          <div class="entre">
+            <a class="btn btn-texto" href="#"><i class="i ic-volver"></i>Volver</a>
+            <a class="btn btn-primario" href="06_nuevo_en_curso.html">Continuar</a>
+          </div>
+        </div>
+
+        <aside class="panel pila-sm">
+          <h4>Resumen</h4>
+          <div class="sec">Cliente</div>
+          <div class="fuerte">Juan Pérez</div>
+          <div class="ter num">DNI 30.123.456</div>
+          <hr class="separador">
+          <div class="franja cumplido"><i class="i i-20 ic-cumplido"></i><div>Juan Pérez ya cuenta como cliente activo: este expediente no usa un lugar nuevo de tu plan.</div></div>
+          <div class="ter">Plan Estudio: 41 de 50 clientes activos.</div>
+        </aside>
+      </div>
+    </main>
+  </div>
+</div>
+</body>
+</html>

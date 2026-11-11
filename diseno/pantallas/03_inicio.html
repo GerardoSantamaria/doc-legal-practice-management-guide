@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Foja · Inicio</title>
+<link rel="stylesheet" href="base.css">
+</head>
+<body>
+<div class="app">
+  <aside class="lateral">
+    <div class="marca"><img src="../logo_horizontal.svg" alt="Foja"></div>
+    <a class="nav-item activo" href="03_inicio.html"><i class="i i-20 ic-inicio"></i>Inicio<span class="contador" aria-label="2 vencidos sin cumplir">2</span></a>
+    <a class="nav-item" href="04_expedientes.html"><i class="i i-20 ic-expedientes"></i>Expedientes</a>
+    <a class="nav-item" href="09_clientes.html"><i class="i i-20 ic-clientes"></i>Clientes</a>
+    <a class="nav-item" href="10_calendario.html"><i class="i i-20 ic-calendario"></i>Calendario</a>
+    <a class="nav-item" href="11_cuenta_plan.html"><i class="i i-20 ic-cuenta"></i>Cuenta</a>
+    <div class="pie">
+      <div class="selector-estudio"><i class="i ic-estudio"></i><div><div class="fuerte">Estudio Zena</div><div class="ter xs">Plan Estudio · Titular</div></div><i class="i ic-abajo" style="margin-left:auto"></i></div>
+    </div>
+  </aside>
+
+  <div class="principal">
+    <header class="superior">
+      <div class="buscador"><i class="i ic-buscar"></i>Buscar por cliente, carátula, número o tribunal</div>
+      <a class="btn btn-primario btn-sm" style="margin-left:auto" href="05_nuevo_expediente.html"><i class="i ic-mas"></i>Nuevo expediente</a>
+      <div class="avatar">GZ</div>
+    </header>
+    <div class="barra-movil"><img src="../logo_horizontal.svg" alt="Foja"><div class="derecha"><i class="i i-24 ic-buscar" aria-label="Buscar"></i><div class="avatar">GZ</div></div></div>
+
+    <main class="contenido">
+      <div class="encabezado entre">
+        <div>
+          <h1>Inicio</h1>
+          <p class="sec num" style="margin-top:4px">Miércoles 11/11/2026 · 09:15</p>
+        </div>
+        <div class="chips" role="group" aria-label="Qué expedientes ver">
+          <span class="chip sel">Míos</span>
+          <span class="chip">Todo el estudio</span>
+        </div>
+      </div>
+
+      <div class="franja info" style="margin-bottom:24px">
+        <i class="i i-20 ic-historial"></i>
+        <div><span class="fuerte">Cambió 1 vencimiento.</span> Por el asueto del 13/11 en San Isidro, "Acompañar documental intimada" pasó del Vie 13/11 al Lun 16/11.</div>
+        <div class="acciones"><a class="btn btn-secundario btn-sm" href="07_ficha.html">Ver</a><span class="btn btn-texto btn-sm">Entendido</span></div>
+      </div>
+
+      <section class="seccion" aria-labelledby="s-vencidos">
+        <div class="seccion-titulo"><i class="i i-20 ic-alerta" style="color:var(--color-vencido)"></i><h2 id="s-vencidos">Vencidos sin cumplir</h2><span class="cant">2</span></div>
+        <div class="tarjetas">
+          <article class="tarjeta t-vencido">
+            <span class="etiqueta e-vencido"><i class="i ic-reloj"></i>Último momento: hasta hoy a las 12:00</span>
+            <div class="accion">Contestar la reconvención</div>
+            <div class="datos num">GÓMEZ C/ BETA SRL S/ DIFERENCIAS SALARIALES · Nº 9876/2026</div>
+            <div class="vence num">Venció el Mar 10/11/2026 a las 14:00. Estás en el plazo de gracia.</div>
+            <div class="botones"><span class="btn btn-primario btn-sm">Lo cumplí</span><span class="btn btn-secundario btn-sm">Corregir plazo</span><span class="btn btn-peligro btn-sm">No se cumplió</span></div>
+          </article>
+          <article class="tarjeta t-vencido">
+            <span class="etiqueta e-vencido"><i class="i ic-alerta"></i>Vencido sin cumplir</span>
+            <div class="accion">Subsanar defectos de la demanda</div>
+            <div class="datos num">LÓPEZ C/ OMEGA SA S/ ACCIDENTE · Nº 4410/2026</div>
+            <div class="vence num">Venció el Lun 09/11/2026 a las 14:00. La gracia terminó el Mar 10/11 a las 12:00.</div>
+            <div class="botones"><span class="btn btn-primario btn-sm">Lo cumplí</span><span class="btn btn-secundario btn-sm">Corregir plazo</span><span class="btn btn-peligro btn-sm">No se cumplió</span></div>
+          </article>
+        </div>
+      </section>
+
+      <section class="seccion" aria-labelledby="s-proximos">
+        <div class="seccion-titulo"><i class="i i-20 ic-calendario"></i><h2 id="s-proximos">Próximos vencimientos</h2><span class="cant">4</span></div>
+        <div class="tarjetas">
+          <article class="tarjeta t-vencido">
+            <span class="etiqueta e-vencido"><i class="i ic-calendario"></i>Vence hoy</span>
+            <div class="accion">Pedir aclaratoria de la sentencia</div>
+            <div class="datos num">RUIZ C/ GAMMA SA S/ DESPIDO · Nº 5555/2025</div>
+            <div class="vence num">Vence hoy Mié 11/11/2026 a las 14:00</div>
+          </article>
+          <article class="tarjeta t-vencido">
+            <span class="etiqueta e-vencido"><i class="i ic-calendario"></i>En 2 días hábiles</span>
+            <div class="accion">Acompañar documental intimada</div>
+            <div class="datos num">PÉREZ C/ ACME SA S/ DESPIDO · Nº 12345/2026 · Plazo suelto</div>
+            <div class="vence num">Vence el Lun 16/11/2026 a las 14:00</div>
+          </article>
+          <article class="tarjeta t-atencion">
+            <span class="etiqueta e-atencion"><i class="i ic-calendario"></i>En 3 días hábiles</span>
+            <div class="accion">Contestar el traslado del dictamen pericial</div>
+            <div class="datos num">PÉREZ C/ ACME SA S/ DESPIDO · Nº 12345/2026</div>
+            <div class="vence num">Vence el Mar 17/11/2026 a las 14:00</div>
+          </article>
+          <article class="tarjeta t-atencion">
+            <span class="etiqueta e-atencion"><i class="i ic-calendario"></i>En 5 días hábiles</span>
+            <div class="accion">Impugnar la regulación de honorarios</div>
+            <div class="datos num">SOSA C/ KAPPA SRL S/ DESPIDO · Nº 2201/2024</div>
+            <div class="vence num">Vence el Mié 18/11/2026 a las 14:00</div>
+          </article>
+        </div>
+      </section>
+
+      <section class="seccion" aria-labelledby="s-oport">
+        <div class="seccion-titulo"><i class="i i-20 ic-bandera" style="color:var(--color-oportunidad)"></i><h2 id="s-oport">Oportunidades</h2><span class="cant">1</span></div>
+        <div class="tarjetas">
+          <article class="tarjeta t-oportunidad">
+            <span class="etiqueta e-oportunidad"><i class="i ic-bandera"></i>Oportunidad</span>
+            <div class="accion">La demandada no contestó la demanda</div>
+            <div class="datos num">DÍAZ C/ DELTA SA S/ DESPIDO · Nº 4321/2026</div>
+            <div class="vence">Su plazo venció el Lun 09/11/2026. Podés pedir que se tenga por no contestada.</div>
+            <div class="botones"><span class="btn btn-secundario btn-sm">Ir al expediente</span><span class="btn btn-texto btn-sm">Ocultar</span></div>
+          </article>
+        </div>
+      </section>
+
+      <section class="seccion" aria-labelledby="s-exp">
+        <div class="entre" style="margin-bottom:12px">
+          <div class="seccion-titulo" style="margin:0"><i class="i i-20 ic-expedientes"></i><h2 id="s-exp">Mis expedientes activos</h2><span class="cant">12</span></div>
+          <a href="04_expedientes.html">Ver todos</a>
+        </div>
+        <div class="panel" style="padding:0 16px">
+          <table class="tabla tabla-movil">
+            <thead><tr><th>Carátula</th><th>Cliente</th><th>Rol</th><th>Etapa actual</th><th>Próximo vencimiento</th></tr></thead>
+            <tbody>
+              <tr><td><div class="titulo-fila">PÉREZ C/ ACME SA S/ DESPIDO</div><div class="ter">Nº 12345/2026 · TT Nº 2 San Isidro</div></td><td>Juan Pérez</td><td>Actora</td><td>Prueba</td><td><span class="etiqueta e-vencido">Lun 16/11</span></td></tr>
+              <tr><td><div class="titulo-fila">RUIZ C/ GAMMA SA S/ DESPIDO</div><div class="ter">Nº 5555/2025 · TT Nº 1 Morón</div></td><td>Ana Ruiz</td><td>Actora</td><td>Sentencia</td><td><span class="etiqueta e-vencido">Hoy 14:00</span></td></tr>
+              <tr><td><div class="titulo-fila">GÓMEZ C/ BETA SRL S/ DIF. SALARIALES</div><div class="ter">Nº 9876/2026 · TT Nº 3 La Plata</div></td><td>Beta SRL</td><td>Demandada</td><td>Postulación</td><td><span class="etiqueta e-vencido">Vencido</span></td></tr>
+              <tr><td><div class="titulo-fila">MARTÍNEZ C/ SIGMA SA S/ DESPIDO</div><div class="ter">Etapa previa · Morón</div></td><td>Luis Martínez</td><td>Actora</td><td>Previa</td><td><span class="etiqueta e-neutro">Sin plazos en curso</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+  </div>
+</div>
+<nav class="barra-pestanas" aria-label="Navegación principal">
+  <a class="activo" href="03_inicio.html"><i class="i i-24 ic-inicio"></i>Inicio</a>
+  <a href="04_expedientes.html"><i class="i i-24 ic-expedientes"></i>Expedientes</a>
+  <a href="05_nuevo_expediente.html" aria-label="Nuevo expediente"><span class="nuevo"><i class="i i-24 ic-mas"></i></span></a>
+  <a href="10_calendario.html"><i class="i i-24 ic-calendario"></i>Calendario</a>
+  <a href="11_cuenta_plan.html"><i class="i i-24 ic-cuenta"></i>Cuenta</a>
+</nav>
+</body>
+</html>

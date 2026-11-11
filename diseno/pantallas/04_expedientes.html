@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Foja · Expedientes</title>
+<link rel="stylesheet" href="base.css">
+</head>
+<body>
+<div class="app">
+  <aside class="lateral">
+    <div class="marca"><img src="../logo_horizontal.svg" alt="Foja"></div>
+    <a class="nav-item" href="03_inicio.html"><i class="i i-20 ic-inicio"></i>Inicio<span class="contador">2</span></a>
+    <a class="nav-item activo" href="04_expedientes.html"><i class="i i-20 ic-expedientes"></i>Expedientes</a>
+    <a class="nav-item" href="09_clientes.html"><i class="i i-20 ic-clientes"></i>Clientes</a>
+    <a class="nav-item" href="10_calendario.html"><i class="i i-20 ic-calendario"></i>Calendario</a>
+    <a class="nav-item" href="11_cuenta_plan.html"><i class="i i-20 ic-cuenta"></i>Cuenta</a>
+    <div class="pie"><div class="selector-estudio"><i class="i ic-estudio"></i><div><div class="fuerte">Estudio Zena</div><div class="ter xs">Plan Estudio · Titular</div></div><i class="i ic-abajo" style="margin-left:auto"></i></div></div>
+  </aside>
+  <div class="principal">
+    <header class="superior">
+      <div class="buscador"><i class="i ic-buscar"></i>Buscar por cliente, carátula, número o tribunal</div>
+      <a class="btn btn-primario btn-sm" style="margin-left:auto" href="05_nuevo_expediente.html"><i class="i ic-mas"></i>Nuevo expediente</a>
+      <div class="avatar">GZ</div>
+    </header>
+    <div class="barra-movil"><img src="../logo_horizontal.svg" alt="Foja"><div class="derecha"><i class="i i-24 ic-buscar"></i><div class="avatar">GZ</div></div></div>
+
+    <main class="contenido">
+      <div class="encabezado entre">
+        <h1>Expedientes</h1>
+        <div class="chips solo-movil"><span class="chip sel">Expedientes</span> <a class="chip" href="09_clientes.html">Clientes</a></div>
+      </div>
+
+      <div class="pestanas" role="tablist">
+        <span class="pestana activa">Activos · 24</span>
+        <span class="pestana">Pausados · 2</span>
+        <span class="pestana">Terminados · 31</span>
+      </div>
+
+      <div class="fila" style="margin-bottom:16px">
+        <div class="control" style="max-width:320px"><i class="i ic-buscar"></i><span class="ter">Filtrar por carátula, cliente o número</span></div>
+        <span class="chip">Responsable: Todos <i class="i ic-abajo"></i></span>
+        <span class="chip">Departamento: Todos <i class="i ic-abajo"></i></span>
+        <span class="chip">Rol: Todos <i class="i ic-abajo"></i></span>
+        <span class="chip">Ordenar: Próximo vencimiento <i class="i ic-abajo"></i></span>
+      </div>
+
+      <div class="panel" style="padding:0 16px">
+        <table class="tabla tabla-movil">
+          <thead><tr><th>Carátula</th><th>Cliente</th><th>Tribunal</th><th>Rol</th><th>Etapa</th><th>Próximo vencimiento</th><th>Responsable</th></tr></thead>
+          <tbody>
+            <tr><td><div class="titulo-fila">GÓMEZ C/ BETA SRL S/ DIF. SALARIALES</div><div class="ter">Nº 9876/2026</div></td><td>Beta SRL</td><td>TT Nº 3 La Plata</td><td>Demandada</td><td>Postulación</td><td><span class="etiqueta e-vencido"><i class="i ic-reloj"></i>Gracia hasta 12:00</span></td><td>G. Zena</td></tr>
+            <tr><td><div class="titulo-fila">LÓPEZ C/ OMEGA SA S/ ACCIDENTE</div><div class="ter">Nº 4410/2026</div></td><td>Carlos López</td><td>TT Nº 1 Lomas de Zamora</td><td>Actora</td><td>Postulación</td><td><span class="etiqueta e-vencido"><i class="i ic-alerta"></i>Vencido</span></td><td>G. Zena</td></tr>
+            <tr><td><div class="titulo-fila">RUIZ C/ GAMMA SA S/ DESPIDO</div><div class="ter">Nº 5555/2025</div></td><td>Ana Ruiz</td><td>TT Nº 1 Morón</td><td>Actora</td><td>Sentencia</td><td><span class="etiqueta e-vencido"><i class="i ic-calendario"></i>Hoy 14:00</span></td><td>M. Sosa</td></tr>
+            <tr><td><div class="titulo-fila">PÉREZ C/ ACME SA S/ DESPIDO</div><div class="ter">Nº 12345/2026</div></td><td>Juan Pérez</td><td>TT Nº 2 San Isidro</td><td>Actora</td><td>Prueba</td><td><span class="etiqueta e-vencido"><i class="i ic-calendario"></i>Lun 16/11</span></td><td>G. Zena</td></tr>
+            <tr><td><div class="titulo-fila">SOSA C/ KAPPA SRL S/ DESPIDO</div><div class="ter">Nº 2201/2024</div></td><td>Pedro Sosa</td><td>TT Nº 4 Quilmes</td><td>Actora</td><td>Sentencia</td><td><span class="etiqueta e-atencion"><i class="i ic-calendario"></i>Mié 18/11</span></td><td>M. Sosa</td></tr>
+            <tr><td><div class="titulo-fila">DÍAZ C/ DELTA SA S/ DESPIDO</div><div class="ter">Nº 4321/2026</div></td><td>Marta Díaz</td><td>TT Nº 2 San Martín</td><td>Actora</td><td>Postulación</td><td><span class="etiqueta e-oportunidad"><i class="i ic-bandera"></i>Oportunidad</span></td><td>G. Zena</td></tr>
+            <tr><td><div class="titulo-fila">MARTÍNEZ C/ SIGMA SA S/ DESPIDO</div><div class="ter">Etapa previa</div></td><td>Luis Martínez</td><td>— (Morón)</td><td>Actora</td><td>Previa</td><td><span class="etiqueta e-neutro">Sin plazos en curso</span></td><td>G. Zena</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="entre" style="margin-top:16px"><span class="sec">Mostrando 1 a 7 de 24</span><div class="fila"><span class="btn btn-secundario btn-sm deshabilitado">Anterior</span><span class="btn btn-secundario btn-sm">Siguiente</span></div></div>
+    </main>
+  </div>
+</div>
+<nav class="barra-pestanas" aria-label="Navegación principal">
+  <a href="03_inicio.html"><i class="i i-24 ic-inicio"></i>Inicio</a>
+  <a class="activo" href="04_expedientes.html"><i class="i i-24 ic-expedientes"></i>Expedientes</a>
+  <a href="05_nuevo_expediente.html" aria-label="Nuevo expediente"><span class="nuevo"><i class="i i-24 ic-mas"></i></span></a>
+  <a href="10_calendario.html"><i class="i i-24 ic-calendario"></i>Calendario</a>
+  <a href="11_cuenta_plan.html"><i class="i i-24 ic-cuenta"></i>Cuenta</a>
+</nav>
+</body>
+</html>

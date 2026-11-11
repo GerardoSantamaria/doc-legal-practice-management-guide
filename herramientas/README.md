@@ -15,6 +15,8 @@
 | `matriz/armar_documento.py` | Reemplaza las secciones 4 a 6 de `documentacion_de_proyecto_asistente_legal_pba.md` con la plantilla, las tablas y la vista general. Las secciones 1 a 3 no se tocan. |
 | `matriz/salida/` | Archivos intermedios que generan los scripts. No se editan a mano. |
 | `requirements.txt` | Dependencias de Python, con versión fija. |
+| `pantallas/capturar.cjs` | Genera las capturas PNG de las maquetas (`diseno/pantallas/*.html`) en `diseno/pantallas/capturas/`, que se usan en `diseno_de_pantallas_v1.md`. |
+| `pantallas/package.json` | Dependencia de Node.js para las capturas (puppeteer, versión fija, con `package-lock.json`). |
 
 ## Preparar el entorno (una sola vez)
 
@@ -89,6 +91,21 @@ Los scripts validan la matriz antes de escribir. Si algo no cierra (un ID duplic
 3. **Las tablas del documento de proyecto salen de `datos.py`.** Para actualizarlas, primero hay que pasar los cambios de la planilla a `datos.py` y después correr los cuatro pasos. Antes de hacerlo, conviene guardar una copia de la planilla y comparar las celdas para no perder nada.
 
 En la aplicación, la planilla validada no pasa por estos scripts: la importa el back-office, que repite las mismas validaciones y publica una versión del flujo (sección 4 del documento de proyecto).
+
+## Regenerar las capturas de las pantallas
+
+Hace falta Node.js 18 o superior. La primera vez, `npm ci` instala puppeteer con la versión del lockfile y descarga el navegador que usa (unos 150 MB, fuera del repositorio):
+
+```bash
+cd herramientas/pantallas
+npm ci
+npm run capturar                      # todas las maquetas
+npm run capturar -- 07_ficha.html     # solo una
+```
+
+Cada maqueta se captura en escritorio (1440 px de ancho) y, las que lo tienen definido en `CAPTURAS`, también en celular (390 px, con sufijo `_celular`). La captura toma el alto completo de la página. Si se agrega una maqueta, hay que sumarla a `CAPTURAS`; el script falla con un nombre que no conoce.
+
+`node_modules/` está en `.gitignore`.
 
 ## Revisar que los diagramas rendericen (opcional)
 

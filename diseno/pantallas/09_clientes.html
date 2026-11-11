@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Foja · Clientes</title>
+<link rel="stylesheet" href="base.css">
+<style>
+  .clientes { display: grid; grid-template-columns: minmax(0, 1fr) 380px; gap: 24px; align-items: start; }
+  .tabla tr.sel td { background: var(--color-tinta-50); }
+  @media (max-width: 760px) { .clientes { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="lateral">
+    <div class="marca"><img src="../logo_horizontal.svg" alt="Foja"></div>
+    <a class="nav-item" href="03_inicio.html"><i class="i i-20 ic-inicio"></i>Inicio<span class="contador">2</span></a>
+    <a class="nav-item" href="04_expedientes.html"><i class="i i-20 ic-expedientes"></i>Expedientes</a>
+    <a class="nav-item activo" href="09_clientes.html"><i class="i i-20 ic-clientes"></i>Clientes</a>
+    <a class="nav-item" href="10_calendario.html"><i class="i i-20 ic-calendario"></i>Calendario</a>
+    <a class="nav-item" href="11_cuenta_plan.html"><i class="i i-20 ic-cuenta"></i>Cuenta</a>
+    <div class="pie"><div class="selector-estudio"><i class="i ic-estudio"></i><div><div class="fuerte">Estudio Zena</div><div class="ter xs">Plan Estudio · Titular</div></div><i class="i ic-abajo" style="margin-left:auto"></i></div></div>
+  </aside>
+  <div class="principal">
+    <header class="superior">
+      <div class="buscador"><i class="i ic-buscar"></i>Buscar por cliente, carátula, número o tribunal</div>
+      <a class="btn btn-primario btn-sm" style="margin-left:auto" href="05_nuevo_expediente.html"><i class="i ic-mas"></i>Nuevo expediente</a>
+      <div class="avatar">GZ</div>
+    </header>
+
+    <main class="contenido">
+      <div class="encabezado entre">
+        <div>
+          <h1>Clientes</h1>
+          <p class="sec" style="margin-top:4px">41 de 50 clientes activos en tu plan. Un cliente cuenta si tiene al menos un expediente activo o pausado.</p>
+        </div>
+        <span class="btn btn-secundario"><i class="i ic-mas"></i>Nuevo cliente</span>
+      </div>
+
+      <div class="clientes">
+        <section>
+          <div class="fila" style="margin-bottom:16px">
+            <div class="control" style="max-width:360px"><i class="i ic-buscar"></i><span class="ter">Buscar por nombre, DNI o CUIT</span></div>
+            <span class="chip sel">Todos</span><span class="chip">Activos</span><span class="chip">Sin expedientes activos</span>
+          </div>
+          <div class="panel" style="padding:0 16px">
+            <table class="tabla">
+              <thead><tr><th>Cliente</th><th>DNI / CUIT</th><th>Expedientes</th><th>Cuenta en el plan</th></tr></thead>
+              <tbody>
+                <tr><td class="titulo-fila">Beta SRL</td><td>30-71234567-8</td><td>1 activo</td><td><span class="etiqueta e-actual">Sí</span></td></tr>
+                <tr><td class="titulo-fila">Carlos López</td><td>27.456.789</td><td>1 activo</td><td><span class="etiqueta e-actual">Sí</span></td></tr>
+                <tr class="sel"><td class="titulo-fila">Juan Pérez</td><td>30.123.456</td><td>2 activos · 1 terminado</td><td><span class="etiqueta e-actual">Sí</span></td></tr>
+                <tr><td class="titulo-fila">Marta Díaz</td><td>25.987.654</td><td>1 activo</td><td><span class="etiqueta e-actual">Sí</span></td></tr>
+                <tr><td class="titulo-fila">Rosa Benítez</td><td>33.222.111</td><td>2 terminados</td><td><span class="etiqueta e-neutro">No</span></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <aside class="panel pila">
+          <div class="entre"><h3>Juan Pérez</h3><span class="btn btn-texto btn-sm"><i class="i ic-lapiz"></i>Editar</span></div>
+          <div class="pila-sm">
+            <div><span class="sec">Tipo</span><div>Persona humana</div></div>
+            <div><span class="sec">DNI</span><div class="num">30.123.456</div></div>
+            <div><span class="sec">Teléfono</span><div class="num">11 5555-1234</div></div>
+            <div><span class="sec">Email</span><div>juan.perez@ejemplo.com</div></div>
+          </div>
+          <hr class="separador" style="margin:0">
+          <h4>Expedientes</h4>
+          <div class="pila-sm">
+            <a href="07_ficha.html">PÉREZ C/ ACME SA S/ DESPIDO</a><div class="ter">Activo · Prueba</div>
+            <a href="#">PÉREZ C/ ACME SA S/ COBRO DE HABERES</a><div class="ter">Activo · Postulación</div>
+            <a href="#">PÉREZ C/ ZETA SRL S/ DESPIDO</a><div class="ter">Terminado · Acuerdo · 2025</div>
+          </div>
+          <a class="btn btn-secundario btn-bloque" href="05_nuevo_expediente.html"><i class="i ic-mas"></i>Nuevo expediente para este cliente</a>
+          <span class="btn btn-peligro btn-sm deshabilitado" title="Tiene expedientes activos">Eliminar cliente</span>
+          <p class="ter">No se puede eliminar mientras tenga expedientes activos.</p>
+        </aside>
+      </div>
+    </main>
+  </div>
+</div>
+</body>
+</html>

@@ -2,6 +2,10 @@
 
 **Alcance:** Fuero Laboral (Provincia de Buenos Aires) | Roles: Actora y Demandada | Plataforma: Web/App Responsive.
 
+**Identidad visual:** el nombre (Foja), la paleta, la tipografía, los íconos, los colores de cada estado y el tono de los textos están en [`identidad_y_diseno_v1.md`](identidad_y_diseno_v1.md). Los colores que menciona este documento (rojo, amarillo, verde, azul, gris) se aplican con los valores de esa paleta, y siempre con ícono y texto.
+
+**Diseño de pantallas:** las maquetas de cada pantalla, con rutas, roles, estados y operaciones de la API, están en [`diseno_de_pantallas_v1.md`](diseno_de_pantallas_v1.md). Este documento define qué hace cada pantalla; aquel, cómo se ve y se comporta.
+
 ## 1. Mapa de Navegación (Sitemap)
 
 La aplicación tendrá una estructura plana y rápida, priorizando que el abogado vea sus urgencias a primera vista.
@@ -94,7 +98,7 @@ Esta es la vista core del producto.
 ### Pantalla 4: Configuración y Calendario Global
 * **Vista de Calendario:** Mensual.
 * **Feriados del Sistema:** Muestra en gris oscuro los feriados y ferias precargados.
-* **Agregar Inhábil Manual:** Botón para marcar un día específico como inhábil a nivel global de la cuenta del abogado.
+* **Agregar Inhábil Manual:** Botón para marcar un día específico como inhábil para todo el estudio (lo ven y lo aplican todos sus miembros, para que el vencimiento de un expediente sea el mismo para todos).
 
 ### Pantalla 5: Cuenta, plan y facturación
 La ven todos los miembros. Solo el titular puede cambiar el plan, los usuarios y los datos fiscales, y dar de baja.

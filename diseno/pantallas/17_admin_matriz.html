@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Foja Admin · Flujos y matriz</title>
+<link rel="stylesheet" href="base.css">
+<style>
+  .lateral.admin { background: var(--color-tinta-900); border-color: var(--color-tinta-900); }
+  .lateral.admin .nav-item { color: var(--color-tinta-100); }
+  .lateral.admin .nav-item.activo { background: rgba(255,255,255,.1); color: #fff; }
+  .subida { border: 2px dashed var(--color-borde-control); border-radius: var(--radio-md); padding: 24px; text-align: center; background: var(--color-fondo); }
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="lateral admin">
+    <div class="marca"><img src="../isotipo.svg" alt="" width="32" height="32" style="outline:1px solid var(--color-tinta-200);border-radius:10px"><span style="color:#fff;font-weight:700">Back-office</span></div>
+    <a class="nav-item" href="16_admin_calendario.html"><i class="i i-20 ic-calendario"></i>Calendario</a>
+    <a class="nav-item activo" href="17_admin_matriz.html"><i class="i i-20 ic-documento"></i>Flujos y matriz</a>
+    <a class="nav-item" href="#"><i class="i i-20 ic-tribunal"></i>Tribunales y regímenes</a>
+    <a class="nav-item" href="#"><i class="i i-20 ic-reloj"></i>Horarios</a>
+    <div class="pie" style="border-color:rgba(255,255,255,.15)"><div class="fila" style="color:var(--color-tinta-100);font-size:var(--texto-sm)"><i class="i ic-escudo"></i>Admin · sesión de 1 hora</div></div>
+  </aside>
+  <div class="principal">
+    <header class="superior">
+      <span class="etiqueta e-vencido"><i class="i ic-escudo"></i>Entorno: producción</span>
+      <span class="sec">Sin acceso a datos de los estudios</span>
+      <div class="avatar" style="margin-left:auto">AD</div>
+    </header>
+
+    <main class="contenido">
+      <div class="encabezado"><h1>Flujos y matriz</h1><p class="sec" style="margin-top:4px">Laboral PBA - Ley 11.653 (judicial)</p></div>
+
+      <div class="grilla-2" style="align-items:start">
+        <section class="panel pila">
+          <h3>Importar una matriz</h3>
+          <div class="subida pila-sm">
+            <i class="i i-24 ic-subir" style="color:var(--color-tinta-500)"></i>
+            <div class="fuerte">Arrastrá la planilla o elegila</div>
+            <div class="ter">Solo .xlsx, hasta 5 MB. Se leen los valores, nunca las fórmulas.</div>
+          </div>
+          <div class="panel pila-sm" style="box-shadow:none">
+            <div class="entre"><div><div class="fuerte">matriz_flujo_laboral_pba_ley_11653.xlsx</div><div class="ter num">Subida hoy 10:20 · SHA-256 3f9a…c21e</div></div><span class="etiqueta e-vencido"><i class="i ic-alerta"></i>3 errores</span></div>
+          </div>
+          <table class="tabla">
+            <thead><tr><th>Hoja</th><th>Fila</th><th>Problema</th></tr></thead>
+            <tbody>
+              <tr><td>Nodos</td><td>12</td><td>LAB_070: el plazo debe ser 0 para SIN_PLAZO</td></tr>
+              <tr><td>Transiciones</td><td>31</td><td>Destino inexistente: LAB_999</td></tr>
+              <tr><td>Nodos</td><td>25</td><td>LAB_210: el tipo FECHA_FIJADA no lleva gracia</td></tr>
+            </tbody>
+          </table>
+          <p class="sec">Corregí la planilla y volvé a subirla. No se puede publicar con errores.</p>
+        </section>
+
+        <section class="pila">
+          <div class="panel pila">
+            <h3>Publicar</h3>
+            <div class="campo"><label>Validado por el equipo legal</label><div class="control vacio">Nombre de quien revisó la matriz</div><span class="ayuda">La abogada o el abogado que revisó el contenido. Queda registrado con la versión.</span></div>
+            <div class="campo"><label>Qué cambió respecto de la versión anterior</label><div class="control area vacio">Ej: se agregó la contestación de la reconvención</div></div>
+            <div class="franja info"><i class="i i-20 ic-info"></i><div>La versión publicada no se puede modificar. Los expedientes nuevos usan la última; los existentes conservan la suya.</div></div>
+            <div class="fila" style="justify-content:flex-end"><span class="btn btn-primario deshabilitado">Publicar versión 2</span></div>
+          </div>
+
+          <div class="panel">
+            <h3 style="margin-bottom:8px">Versiones</h3>
+            <table class="tabla">
+              <thead><tr><th>Versión</th><th>Estado</th><th>Publicada</th><th>Validada por</th></tr></thead>
+              <tbody><tr><td>1</td><td><span class="etiqueta e-cumplido">Publicada</span></td><td>01/09/2026</td><td>Dra. (abogada validadora)</td></tr></tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+    </main>
+  </div>
+</div>
+</body>
+</html>

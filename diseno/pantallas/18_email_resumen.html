@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Foja · Email del resumen diario</title>
+<link rel="stylesheet" href="base.css">
+<style>
+  body { background: #E9E6DD; padding: 24px; }
+  .cliente-correo { max-width: 600px; margin: 0 auto; }
+  .meta { font-size: var(--texto-sm); color: var(--color-texto-secundario); margin-bottom: 12px; }
+  .correo { background: #fff; border-radius: 8px; overflow: hidden; border: 1px solid var(--color-borde); }
+  .correo .cab-correo { background: var(--color-tinta-700); padding: 16px 24px; display: flex; align-items: center; gap: 10px; color: #fff; }
+  .correo .cuerpo-correo { padding: 24px; }
+  .bloque { border-left: 4px solid; padding: 8px 12px; margin: 12px 0; background: var(--color-fondo); border-radius: 4px; }
+  .linea-exp { display: flex; justify-content: space-between; gap: 12px; padding: 6px 0; border-bottom: 1px solid var(--color-borde); font-size: var(--texto-sm); }
+  .linea-exp:last-child { border-bottom: 0; }
+  .pie-correo { padding: 16px 24px; font-size: var(--texto-xs); color: var(--color-texto-secundario); border-top: 1px solid var(--color-borde); }
+</style>
+</head>
+<body>
+<div class="cliente-correo">
+  <div class="meta">
+    <div><span class="fuerte">De:</span> Foja &lt;avisos@[dominio]&gt;</div>
+    <div><span class="fuerte">Asunto:</span> 2 vencidos sin cumplir y 4 vencimientos próximos</div>
+  </div>
+  <div class="correo">
+    <div class="cab-correo"><img src="../isotipo.svg" alt="" width="28" height="28" style="outline:1px solid var(--color-tinta-200);border-radius:8px"><span style="font-weight:700;font-size:20px">foja</span><span style="margin-left:auto;font-size:var(--texto-sm);color:var(--color-tinta-100)">Mié 11/11/2026</span></div>
+    <div class="cuerpo-correo">
+      <p>Hola, Gerardo. Esto es lo que tenés en <span class="fuerte">Estudio Zena</span>:</p>
+
+      <div class="bloque" style="border-color:var(--color-vencido)">
+        <div class="fuerte" style="color:var(--color-vencido-texto)">2 vencidos sin cumplir</div>
+        <div class="linea-exp num"><span>Exp. Nº 9876/2026</span><span>Último momento: hoy hasta las 12:00</span></div>
+        <div class="linea-exp num"><span>Exp. Nº 4410/2026</span><span>Venció el Lun 09/11</span></div>
+      </div>
+
+      <div class="bloque" style="border-color:var(--color-vencido)">
+        <div class="fuerte" style="color:var(--color-vencido-texto)">2 en los próximos 2 días hábiles</div>
+        <div class="linea-exp num"><span>Exp. Nº 5555/2025</span><span>Hoy a las 14:00</span></div>
+        <div class="linea-exp num"><span>Exp. Nº 12345/2026</span><span>Lun 16/11 a las 14:00</span></div>
+      </div>
+
+      <div class="bloque" style="border-color:var(--color-atencion)">
+        <div class="fuerte" style="color:var(--color-atencion-texto)">2 en los próximos 5 días hábiles</div>
+        <div class="linea-exp num"><span>Exp. Nº 12345/2026</span><span>Mar 17/11 a las 14:00</span></div>
+        <div class="linea-exp num"><span>Exp. Nº 2201/2024</span><span>Mié 18/11 a las 14:00</span></div>
+      </div>
+
+      <div class="bloque" style="border-color:var(--color-oportunidad)">
+        <div class="fuerte" style="color:var(--color-oportunidad)">1 oportunidad</div>
+        <div class="linea-exp num"><span>Exp. Nº 4321/2026</span><span>Venció un plazo de la contraparte</span></div>
+      </div>
+
+      <p style="margin:20px 0"><a class="btn btn-primario" href="#" style="color:#fff">Abrir Foja</a></p>
+      <p class="sec">Por privacidad, este email no incluye carátulas ni nombres de clientes. Podés activarlos en Cuenta &gt; Perfil y avisos.</p>
+    </div>
+    <div class="pie-correo">
+      Recibís este email porque tenés activado el resumen diario. <a href="#">Cambiar o desactivar</a>.<br>
+      Foja nunca te va a pedir contraseñas ni datos de pago por email.<br>
+      [RAZÓN SOCIAL] · [DOMICILIO LEGAL]
+    </div>
+  </div>
+</div>
+</body>
+</html>

@@ -35,6 +35,7 @@ La base de producto es buena: el alcance de la V1 es acotado, la separación ent
 | Facturación electrónica | La emite la app ante ARCA, por web services, por cada cobro (sección 9.4) | Decidido; falta la condición fiscal del emisor y la validación del contador |
 | Documentos legales | Términos y condiciones, política de privacidad y acuerdo de encargo del tratamiento, en `legal/` | Borrador v0.1 listo; falta la revisión de un abogado (sección 10.7) |
 | Responsable de seguridad y privacidad | Gerardo Zena | Designación provisoria |
+| Nombre y marca | **Foja** ("Cada plazo, a tiempo."), con paleta azul tinta y papel, tipografía Inter e íconos Lucide. Ver [`identidad_y_diseno_v1.md`](identidad_y_diseno_v1.md) | Propuesto; falta verificar el INPI y el dominio |
 | Cumplimiento | Ley 25.326 + ISO/IEC 27034, 27001 + 27017 y 27701. **Objetivo: cumplir, sin certificar por ahora.** | Decidido; falta el plan (sección 10) |
 | Motor de plazos | Solo en el backend, función pura, principio de "vencimiento más temprano ante la duda" | Corregido en el documento de lógica |
 | Vencimiento tipado | Cada plazo tiene vencimiento nominal (fecha de alerta), límite ordinario y límite con gracia. El tipo de límite horario es un dato del hito y las horas son datos de la jurisdicción. | Decidido; resuelve E11 y deja R2 y R3 como parámetros |
@@ -600,3 +601,5 @@ Si se aprueba una nueva ley de protección de datos personales, hay que revisar 
 | 16 | Motor de plazos con los tests del documento de lógica en verde | [TÉCNICO] | Implementación de referencia en Python con los 23 casos y los 2 rechazos en verde (`herramientas/motor_plazos_referencia.py`); falta el módulo Java |
 | 17 | Integración con ARCA probada en homologación | [TÉCNICO] | Pendiente |
 | 18 | Condición fiscal del emisor, validada con un contador | [PRODUCTO] | Pendiente |
+| 19 | Marca "Foja" verificada en el INPI (clases 9 y 42) y dominio registrado | [PRODUCTO] | Pendiente. Alternativas en `identidad_y_diseno_v1.md` |
+| 20 | Logo final (texto a curvas) e íconos de la PWA exportados | [DISEÑO] | Propuesta en `diseno/` |

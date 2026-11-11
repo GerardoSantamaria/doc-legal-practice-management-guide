@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Foja · PÉREZ C/ ACME SA S/ DESPIDO</title>
+<link rel="stylesheet" href="base.css">
+<style>
+  .ficha { display: grid; grid-template-columns: 400px minmax(0, 1fr); gap: 24px; align-items: start; }
+  .datos-exp { display: flex; flex-wrap: wrap; gap: 4px 16px; margin-top: 8px; font-size: var(--texto-sm); color: var(--color-texto-secundario); }
+  .acciones-sec { display: flex; flex-wrap: wrap; gap: 4px 8px; }
+  @media (max-width: 760px) {
+    .ficha { grid-template-columns: 1fr; }
+    .ficha-panel { order: -1; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="lateral">
+    <div class="marca"><img src="../logo_horizontal.svg" alt="Foja"></div>
+    <a class="nav-item" href="03_inicio.html"><i class="i i-20 ic-inicio"></i>Inicio<span class="contador">2</span></a>
+    <a class="nav-item activo" href="04_expedientes.html"><i class="i i-20 ic-expedientes"></i>Expedientes</a>
+    <a class="nav-item" href="09_clientes.html"><i class="i i-20 ic-clientes"></i>Clientes</a>
+    <a class="nav-item" href="10_calendario.html"><i class="i i-20 ic-calendario"></i>Calendario</a>
+    <a class="nav-item" href="11_cuenta_plan.html"><i class="i i-20 ic-cuenta"></i>Cuenta</a>
+    <div class="pie"><div class="selector-estudio"><i class="i ic-estudio"></i><div><div class="fuerte">Estudio Zena</div><div class="ter xs">Plan Estudio · Titular</div></div><i class="i ic-abajo" style="margin-left:auto"></i></div></div>
+  </aside>
+  <div class="principal">
+    <header class="superior">
+      <div class="buscador"><i class="i ic-buscar"></i>Buscar por cliente, carátula, número o tribunal</div>
+      <a class="btn btn-primario btn-sm" style="margin-left:auto" href="05_nuevo_expediente.html"><i class="i ic-mas"></i>Nuevo expediente</a>
+      <div class="avatar">GZ</div>
+    </header>
+    <div class="barra-movil"><a href="04_expedientes.html" aria-label="Volver"><i class="i i-24 ic-volver"></i></a><span class="fuerte">Expediente</span><div class="derecha"><i class="i i-24 ic-mas-opciones" aria-label="Más opciones"></i></div></div>
+
+    <main class="contenido">
+      <div class="encabezado">
+        <div class="migas oculto-movil"><a href="04_expedientes.html">Expedientes</a> / PÉREZ C/ ACME SA S/ DESPIDO</div>
+        <div class="entre" style="align-items:flex-start">
+          <div>
+            <h1>PÉREZ C/ ACME SA S/ DESPIDO</h1>
+            <div class="datos-exp num">
+              <span>Nº 12345/2026</span>
+              <span>Cliente: <a href="09_clientes.html">Juan Pérez</a></span>
+              <span>Tribunal de Trabajo Nº 2 de San Isidro</span>
+              <span>Actora</span>
+              <span>Ley 11.653 · flujo v1</span>
+              <span>Responsable: Gerardo Zena</span>
+            </div>
+          </div>
+          <div class="fila oculto-movil">
+            <span class="btn btn-secundario btn-sm"><i class="i ic-lapiz"></i>Editar datos</span>
+            <span class="btn btn-secundario btn-sm"><i class="i ic-mas-opciones"></i>Más</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="pestanas" role="tablist">
+        <span class="pestana activa">Flujo</span>
+        <span class="pestana">Partes · 2</span>
+        <span class="pestana">Suspensiones</span>
+        <span class="pestana">Historial</span>
+      </div>
+
+      <div class="ficha">
+        <section class="panel ficha-mapa" aria-label="Mapa del flujo">
+          <div class="entre"><h3>Mapa del flujo</h3><a href="#" class="sec">Ver flujo completo</a></div>
+
+          <div class="fase">Etapa previa y Postulación</div>
+          <div class="agrupado"><a href="#"><i class="i ic-abajo"></i> 9 hitos anteriores a la carga</a></div>
+
+          <div class="fase">Prueba</div>
+          <div class="mapa">
+            <div class="nodo completado"><span class="marca-nodo"><i class="i ic-tilde"></i></span><div class="cuerpo"><div class="nombre">Auto de apertura a prueba</div><div class="ter num">Cumplido el 14/09/2026</div></div></div>
+            <div class="nodo completado"><span class="marca-nodo"><i class="i ic-tilde"></i></span><div class="cuerpo"><div class="nombre">Producción de la prueba pericial</div><div class="ter num">Cumplido el 06/11/2026</div></div></div>
+            <div class="nodo actual"><span class="marca-nodo"><i class="i ic-actual"></i></span><div class="cuerpo"><div class="nombre">Traslado del dictamen pericial</div><div class="sec num">Te toca a vos · vence Mar 17/11 14:00</div></div></div>
+            <div class="nodo actual" style="outline-style:dashed"><span class="marca-nodo"><i class="i ic-reloj-arena"></i></span><div class="cuerpo"><div class="nombre">Producción de la prueba informativa</div><div class="sec">En trámite · sin plazo</div></div></div>
+          </div>
+
+          <div class="fase">Vista de causa</div>
+          <div class="mapa">
+            <div class="nodo futuro"><span class="marca-nodo"><i class="i ic-circulo"></i></span><div class="cuerpo"><div class="nombre">Fijación de la audiencia de vista de causa</div><div class="ter">Esperando al tribunal</div></div></div>
+            <div class="nodo futuro"><span class="marca-nodo"><i class="i ic-circulo"></i></span><div class="cuerpo"><div class="nombre">Audiencia de vista de causa</div><div class="ter">Fecha fijada por el tribunal</div></div></div>
+          </div>
+          <div class="agrupado ter" style="margin-top:8px">Sentencia, Recursos y Ejecución: 12 hitos más</div>
+
+          <hr class="separador">
+          <div class="entre"><h4>Plazos sueltos</h4><span class="btn btn-texto btn-sm"><i class="i ic-mas"></i>Agregar</span></div>
+          <div class="tarjeta t-vencido" style="margin-top:8px">
+            <span class="etiqueta e-vencido"><i class="i ic-calendario"></i>En 2 días hábiles</span>
+            <div class="accion">Acompañar documental intimada</div>
+            <div class="vence num">Vence el Lun 16/11/2026 a las 14:00</div>
+            <div class="ter"><i class="i ic-historial"></i> Cambió: antes Vie 13/11, ahora Lun 16/11 (asueto)</div>
+          </div>
+        </section>
+
+        <section class="ficha-panel pila">
+          <div class="chips" role="tablist" aria-label="Hitos actuales">
+            <span class="chip sel">Traslado del dictamen pericial</span>
+            <span class="chip">Prueba informativa</span>
+          </div>
+
+          <div class="panel pila">
+            <div class="entre">
+              <div>
+                <h2>Traslado del dictamen pericial</h2>
+                <div class="ter" style="margin-top:4px">Art. 473 CPCCBA (aplicación supletoria)</div>
+              </div>
+              <span class="etiqueta e-actual"><i class="i ic-actual"></i>Te toca a vos</span>
+            </div>
+
+            <div>
+              <h4 style="margin-bottom:8px">Calculadora del plazo</h4>
+              <div class="formulario">
+                <div class="campo">
+                  <label>Tipo de notificación</label>
+                  <div class="control">Electrónica<span class="derecha"><i class="i ic-abajo"></i></span></div>
+                </div>
+                <div class="campo">
+                  <label>Día Cero (notificación)</label>
+                  <div class="control num">Lun 09/11/2026<span class="derecha"><i class="i ic-calendario"></i></span></div>
+                </div>
+                <div class="campo">
+                  <label>Plazo</label>
+                  <div class="control num">5 días hábiles judiciales<span class="derecha"><i class="i ic-lapiz"></i></span></div>
+                  <span class="ayuda">Plazo legal: 5. Si lo cambiás, te pedimos el motivo.</span>
+                </div>
+                <div class="campo">
+                  <span class="rotulo">Prórroga</span>
+                  <span class="btn btn-secundario"><i class="i ic-mas"></i>1 día hábil (asueto o falla del sistema)</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="resultado">
+              <div class="entre"><div class="grande">Vence el Mar 17/11/2026 a las 14:00</div><span class="etiqueta e-atencion"><i class="i ic-calendario"></i>En 3 días hábiles</span></div>
+              <div class="sec num" style="margin-top:6px">Si no llegás: hasta el Mié 18/11/2026 a las 12:00 (plazo de gracia)</div>
+              <div style="margin-top:6px"><a href="08_dialogos.html">¿Por qué vence ese día?</a></div>
+            </div>
+
+            <div>
+              <h4 style="margin-bottom:4px">Checklist</h4>
+              <ul class="lista-check">
+                <li><span class="check si"><i class="i ic-tilde" style="width:12px;height:12px"></i></span><div>Revisar el dictamen con el consultor técnico<div class="ter">Tildado por G. Zena el 10/11</div></div></li>
+                <li><span class="check"></span><div>Preparar las observaciones o la impugnación</div></li>
+                <li><span class="check"></span><div>Documentación: dictamen del consultor técnico de parte</div></li>
+              </ul>
+            </div>
+
+            <hr class="separador" style="margin:0">
+            <div class="entre">
+              <div class="acciones-sec">
+                <span class="btn btn-texto btn-sm">Agregar plazo suelto</span>
+                <span class="btn btn-texto btn-sm">Cargar suspensión</span>
+                <span class="btn btn-texto btn-sm">Saltear etapa</span>
+                <span class="btn btn-texto btn-sm">Retroceder etapa</span>
+              </div>
+              <a class="btn btn-primario" href="08_dialogos.html">Avanzar etapa</a>
+            </div>
+          </div>
+        </section>
+      </div>
+    </main>
+  </div>
+</div>
+<nav class="barra-pestanas" aria-label="Navegación principal">
+  <a href="03_inicio.html"><i class="i i-24 ic-inicio"></i>Inicio</a>
+  <a class="activo" href="04_expedientes.html"><i class="i i-24 ic-expedientes"></i>Expedientes</a>
+  <a href="05_nuevo_expediente.html" aria-label="Nuevo expediente"><span class="nuevo"><i class="i i-24 ic-mas"></i></span></a>
+  <a href="10_calendario.html"><i class="i i-24 ic-calendario"></i>Calendario</a>
+  <a href="11_cuenta_plan.html"><i class="i i-24 ic-cuenta"></i>Cuenta</a>
+</nav>
+</body>
+</html>

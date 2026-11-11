@@ -1,0 +1,11 @@
+{
+  "name": "foja-capturas-pantallas",
+  "private": true,
+  "description": "Genera las capturas PNG de las maquetas de diseno/pantallas/.",
+  "scripts": {
+    "capturar": "node capturar.cjs"
+  },
+  "devDependencies": {
+    "puppeteer": "23.11.1"
+  }
+}

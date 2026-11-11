@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Foja · Bienvenida</title>
+<link rel="stylesheet" href="base.css">
+<style>
+  .centro { max-width: 720px; margin: 0 auto; padding: 40px 24px 64px; }
+  .doc { display: flex; gap: 12px; align-items: flex-start; padding: 12px 0; border-bottom: 1px solid var(--color-borde); }
+  .doc:last-child { border-bottom: 0; }
+</style>
+</head>
+<body>
+<div class="barra-simple"><img src="../logo_horizontal.svg" alt="Foja"><div class="derecha"><span class="sec oculto-movil">gerardo@ejemplo.com</span><div class="avatar">GZ</div></div></div>
+<div class="centro">
+  <div class="pasos">
+    <div class="paso hecho"><span class="n"><i class="i ic-tilde"></i></span><span class="texto">Ingresar con Google</span><span class="linea"></span></div>
+    <div class="paso actual"><span class="n">2</span><span class="texto">Documentos y estudio</span></div>
+  </div>
+
+  <div class="pila">
+    <div>
+      <h1>Hola, Gerardo</h1>
+      <p class="sec" style="margin-top:8px">Antes de empezar, leé y aceptá estos documentos. Podés volver a verlos cuando quieras desde Cuenta.</p>
+    </div>
+
+    <div class="panel">
+      <div class="doc">
+        <span class="check"></span>
+        <div style="flex:1">
+          <div class="fuerte">Acepto los Términos y condiciones</div>
+          <div class="sec">Versión 1.0, vigente desde el 01/12/2026. <a href="#">Leer el texto completo</a></div>
+        </div>
+      </div>
+      <div class="doc">
+        <span class="check"></span>
+        <div style="flex:1">
+          <div class="fuerte">Leí la Política de privacidad</div>
+          <div class="sec">Cómo tratamos tus datos y cómo ejercer tus derechos. <a href="#">Leer el texto completo</a></div>
+        </div>
+      </div>
+      <div class="doc">
+        <span class="check"></span>
+        <div style="flex:1">
+          <div class="fuerte">Acepto el Acuerdo de encargo del tratamiento, en nombre de mi estudio</div>
+          <div class="sec">Regula cómo tratamos los datos de tus clientes por cuenta tuya. Solo lo acepta quien crea el estudio. <a href="#">Leer el texto completo</a></div>
+        </div>
+      </div>
+    </div>
+
+    <h2 style="margin-top:32px">Tu estudio</h2>
+    <div class="panel pila">
+      <div class="campo">
+        <span class="rotulo">¿Cómo trabajás?</span>
+        <div class="opciones">
+          <div class="opcion sel" style="flex:1"><span class="radio"></span><div><div class="fuerte">Solo</div><div class="sec">Plan Individual: un usuario</div></div></div>
+          <div class="opcion" style="flex:1"><span class="radio"></span><div><div class="fuerte">Con un equipo</div><div class="sec">Plan Estudio: abogados y asistentes</div></div></div>
+        </div>
+      </div>
+      <div class="campo">
+        <label>Nombre del estudio</label>
+        <div class="control">Estudio Zena</div>
+        <span class="ayuda">Es el nombre que van a ver tus colaboradores. Lo podés cambiar después.</span>
+      </div>
+      <div class="franja info"><i class="i i-20 ic-info"></i><div><span class="fuerte">30 días de prueba gratis, sin tarjeta.</span> Al terminar, elegís un plan según la cantidad de clientes activos. Si no elegís ninguno, tus datos quedan en modo de solo lectura.</div></div>
+    </div>
+
+    <div class="entre">
+      <a class="btn btn-texto" href="01_ingreso.html"><i class="i ic-salir"></i>Salir</a>
+      <a class="btn btn-primario deshabilitado" aria-disabled="true">Crear mi estudio</a>
+    </div>
+    <p class="ter" style="text-align:right">El botón se habilita al aceptar los tres documentos.</p>
+  </div>
+</div>
+</body>
+</html>

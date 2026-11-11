@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Foja · Calendario</title>
+<link rel="stylesheet" href="base.css">
+<style>
+  .cal { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 24px; align-items: start; }
+  .leyenda { display: flex; gap: 16px; flex-wrap: wrap; font-size: var(--texto-sm); margin-top: 12px; }
+  .leyenda span::before { content: ""; display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; background: var(--c); }
+  @media (max-width: 760px) { .cal { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="lateral">
+    <div class="marca"><img src="../logo_horizontal.svg" alt="Foja"></div>
+    <a class="nav-item" href="03_inicio.html"><i class="i i-20 ic-inicio"></i>Inicio<span class="contador">2</span></a>
+    <a class="nav-item" href="04_expedientes.html"><i class="i i-20 ic-expedientes"></i>Expedientes</a>
+    <a class="nav-item" href="09_clientes.html"><i class="i i-20 ic-clientes"></i>Clientes</a>
+    <a class="nav-item activo" href="10_calendario.html"><i class="i i-20 ic-calendario"></i>Calendario</a>
+    <a class="nav-item" href="11_cuenta_plan.html"><i class="i i-20 ic-cuenta"></i>Cuenta</a>
+    <div class="pie"><div class="selector-estudio"><i class="i ic-estudio"></i><div><div class="fuerte">Estudio Zena</div><div class="ter xs">Plan Estudio · Titular</div></div><i class="i ic-abajo" style="margin-left:auto"></i></div></div>
+  </aside>
+  <div class="principal">
+    <header class="superior">
+      <div class="buscador"><i class="i ic-buscar"></i>Buscar por cliente, carátula, número o tribunal</div>
+      <a class="btn btn-primario btn-sm" style="margin-left:auto" href="05_nuevo_expediente.html"><i class="i ic-mas"></i>Nuevo expediente</a>
+      <div class="avatar">GZ</div>
+    </header>
+
+    <main class="contenido">
+      <div class="encabezado entre">
+        <h1>Calendario</h1>
+        <div class="fila">
+          <span class="chip">Departamento: San Isidro <i class="i ic-abajo"></i></span>
+          <span class="btn btn-secundario btn-sm"><i class="i ic-volver"></i></span>
+          <span class="fuerte">Noviembre 2026</span>
+          <span class="btn btn-secundario btn-sm"><i class="i ic-derecha"></i></span>
+        </div>
+      </div>
+
+      <div class="franja info" style="margin-bottom:16px"><i class="i i-20 ic-info"></i><div><span class="fuerte">Calendario oficial hasta el 31/12/2026.</span> Si un plazo pasa de esa fecha, te avisamos que falta el calendario en lugar de mostrar una fecha que puede estar mal.</div></div>
+
+      <div class="cal">
+        <section class="panel">
+          <div class="mes num">
+            <div class="dia-sem">Lun</div><div class="dia-sem">Mar</div><div class="dia-sem">Mié</div><div class="dia-sem">Jue</div><div class="dia-sem">Vie</div><div class="dia-sem">Sáb</div><div class="dia-sem">Dom</div>
+            <div class="fuera">26</div><div class="fuera">27</div><div class="fuera">28</div><div class="fuera">29</div><div class="fuera">30</div><div class="fuera">31</div><div class="finde">1</div>
+            <div>2</div><div>3</div><div>4</div><div>5</div><div>6</div><div class="finde">7</div><div class="finde">8</div>
+            <div>9</div><div>10</div><div class="hoy"><span class="n-dia">11</span><span class="evento ev-vence">1 vencimiento</span></div><div>12</div><div class="inhabil">13<span class="evento ev-feriado">Asueto San Isidro</span></div><div class="finde">14</div><div class="finde">15</div>
+            <div>16<span class="evento ev-vence">1 vencimiento</span></div><div>17<span class="evento ev-vence">1 vencimiento</span></div><div>18<span class="evento ev-vence">1 vencimiento</span></div><div>19</div><div>20</div><div class="finde">21</div><div class="finde">22</div>
+            <div class="inhabil">23<span class="evento ev-feriado">Feriado nacional</span></div><div>24</div><div>25</div><div>26</div><div class="inhabil">27<span class="evento ev-estudio">Inhábil del estudio</span></div><div class="finde">28</div><div class="finde">29</div>
+            <div>30</div><div class="fuera">1</div><div class="fuera">2</div><div class="fuera">3</div><div class="fuera">4</div><div class="fuera">5</div><div class="fuera">6</div>
+          </div>
+          <div class="leyenda">
+            <span style="--c:#DCD8CC">Feriado, feria o asueto (sistema)</span>
+            <span style="--c:var(--color-tinta-100)">Inhábil del estudio</span>
+            <span style="--c:var(--color-atencion-fondo)">Tus vencimientos desde hoy (los vencidos están en Inicio)</span>
+          </div>
+          <p class="ter" style="margin-top:8px">Datos de ejemplo.</p>
+        </section>
+
+        <aside class="pila">
+          <div class="panel pila">
+            <div class="entre"><h3>Inhábiles del estudio</h3></div>
+            <p class="sec">Días en los que no corren los plazos de los expedientes de tu estudio, por ejemplo una falla del sistema del tribunal. Se aplican a todos los miembros.</p>
+            <div class="tarjeta t-actual">
+              <div class="fuerte num">Vie 27/11/2026</div>
+              <div class="sec">Corte del sistema de presentaciones · cargado por G. Zena</div>
+              <div class="botones"><span class="btn btn-peligro btn-sm">Quitar</span></div>
+            </div>
+            <span class="btn btn-secundario btn-bloque"><i class="i ic-inhabil"></i>Marcar un día inhábil</span>
+            <p class="ter">Al marcar o quitar un día, recalculamos los vencimientos y te mostramos los que cambian.</p>
+          </div>
+          <div class="panel pila-sm">
+            <h4>Vie 13/11/2026</h4>
+            <div class="sec">Asueto en el Departamento Judicial de San Isidro</div>
+            <div class="ter">Fuente: resolución de la SCBA (dato de ejemplo)</div>
+          </div>
+        </aside>
+      </div>
+    </main>
+  </div>
+</div>
+</body>
+</html>

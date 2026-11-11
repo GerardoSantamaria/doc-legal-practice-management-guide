@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Foja · Cuenta · Plan</title>
+<link rel="stylesheet" href="base.css">
+<style>
+  .tramo { border: 1px solid var(--color-borde-control); border-radius: var(--radio-md); padding: 16px; background: var(--color-superficie); }
+  .tramo.actual { border-color: var(--color-tinta-600); box-shadow: 0 0 0 1px var(--color-tinta-600); }
+  .tramo .precio { font-size: var(--texto-xl); font-weight: var(--peso-titulo); margin: 8px 0; }
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="lateral">
+    <div class="marca"><img src="../logo_horizontal.svg" alt="Foja"></div>
+    <a class="nav-item" href="03_inicio.html"><i class="i i-20 ic-inicio"></i>Inicio<span class="contador">2</span></a>
+    <a class="nav-item" href="04_expedientes.html"><i class="i i-20 ic-expedientes"></i>Expedientes</a>
+    <a class="nav-item" href="09_clientes.html"><i class="i i-20 ic-clientes"></i>Clientes</a>
+    <a class="nav-item" href="10_calendario.html"><i class="i i-20 ic-calendario"></i>Calendario</a>
+    <a class="nav-item activo" href="11_cuenta_plan.html"><i class="i i-20 ic-cuenta"></i>Cuenta</a>
+    <div class="pie"><div class="selector-estudio"><i class="i ic-estudio"></i><div><div class="fuerte">Estudio Zena</div><div class="ter xs">Plan Estudio · Titular</div></div><i class="i ic-abajo" style="margin-left:auto"></i></div></div>
+  </aside>
+  <div class="principal">
+    <header class="superior">
+      <div class="buscador"><i class="i ic-buscar"></i>Buscar por cliente, carátula, número o tribunal</div>
+      <a class="btn btn-primario btn-sm" style="margin-left:auto" href="05_nuevo_expediente.html"><i class="i ic-mas"></i>Nuevo expediente</a>
+      <div class="avatar">GZ</div>
+    </header>
+
+    <main class="contenido">
+      <div class="encabezado"><h1>Cuenta</h1></div>
+      <div class="pestanas" role="tablist">
+        <a class="pestana activa" href="11_cuenta_plan.html">Plan</a>
+        <a class="pestana" href="13_cuenta_equipo.html">Equipo</a>
+        <a class="pestana" href="12_cuenta_facturacion.html">Facturación</a>
+        <a class="pestana" href="14_cuenta_avisos.html">Perfil y avisos</a>
+      </div>
+
+      <div class="grilla-2" style="align-items:start">
+        <section class="panel pila">
+          <div class="entre"><h3>Tu plan</h3><span class="etiqueta e-cumplido"><i class="i ic-cumplido"></i>Activa</span></div>
+          <div>
+            <div class="fuerte" style="font-size:var(--texto-lg)">Estudio · hasta 50 clientes · mensual</div>
+            <div class="sec num">3 usuarios incluidos · próximo cobro el Mar 01/12/2026 · $ [precio] final</div>
+          </div>
+          <div class="pila-sm">
+            <div class="entre"><span class="fuerte num">41 de 50 clientes activos</span><span class="sec">82 %</span></div>
+            <div class="barra alerta" role="progressbar" aria-valuenow="41" aria-valuemax="50"><span style="width:82%"></span></div>
+            <div class="franja atencion"><i class="i i-20 ic-alerta"></i><div>Estás cerca del límite de tu plan. Cuando llegues a 50, vas a poder seguir trabajando con todo lo cargado, pero no sumar clientes nuevos.</div></div>
+            <p class="ter">Un cliente cuenta si tiene al menos un expediente activo o pausado. Terminar un expediente libera su lugar.</p>
+          </div>
+        </section>
+
+        <section class="panel pila">
+          <h3>Cambiar de plan</h3>
+          <div class="grilla-3" style="gap:12px">
+            <div class="tramo actual"><div class="fuerte">Hasta 50</div><div class="precio">$ [precio]</div><div class="sec">Tu plan actual</div></div>
+            <div class="tramo"><div class="fuerte">Hasta 150</div><div class="precio">$ [precio]</div><span class="btn btn-primario btn-sm btn-bloque">Subir</span></div>
+            <div class="tramo"><div class="fuerte">A medida</div><div class="precio" style="font-size:var(--texto-md)">Más de 150</div><span class="btn btn-secundario btn-sm btn-bloque">Consultar</span></div>
+          </div>
+          <p class="sec">Subir de plan es inmediato: antes de confirmar te mostramos la diferencia a pagar por este mes. Bajar se aplica desde el próximo período, y solo si tus clientes activos entran en el plan nuevo.</p>
+        </section>
+      </div>
+
+      <div class="grilla-2" style="align-items:start;margin-top:16px">
+        <section class="panel pila">
+          <h3>Tus datos</h3>
+          <p class="sec">Descargá todos los datos del estudio: clientes, expedientes, pasos e historial. Te avisamos por email cuando esté lista; el enlace dura 24 horas y se puede usar una vez.</p>
+          <div class="fila"><span class="btn btn-secundario"><i class="i ic-descargar"></i>Exportar en Excel</span><span class="btn btn-secundario"><i class="i ic-descargar"></i>Exportar en JSON</span></div>
+        </section>
+
+        <section class="panel pila">
+          <h3>Dar de baja</h3>
+          <p class="sec num">Si das de baja el plan, seguís con acceso completo hasta el Lun 30/11/2026. Después, 30 días de solo lectura para consultar y exportar, y luego eliminamos los datos del estudio. Las facturas se conservan.</p>
+          <div class="fila"><span class="btn btn-secundario" style="color:var(--color-vencido-texto)">Dar de baja</span></div>
+          <p class="ter">El botón de arrepentimiento se muestra durante los 10 días corridos posteriores a la contratación o al primer cobro.</p>
+        </section>
+      </div>
+    </main>
+  </div>
+</div>
+</body>
+</html>
