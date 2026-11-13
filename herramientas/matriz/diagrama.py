@@ -4,6 +4,8 @@ from pathlib import Path
 
 from openpyxl import load_workbook
 
+from cargar_datos import cargar
+
 CIERRA = "CIERRA_CAMINO"
 GRUPOS = [
     ("Etapa previa", ["Previa"]),
@@ -58,8 +60,8 @@ def etiqueta(nodo):
             f'<br/>{plazo(nodo)}')
 
 
-def grupos_de(nodos):
-    grupos = OrderedDict((titulo, fases) for titulo, fases in GRUPOS)
+def grupos_de(nodos, base):
+    grupos = OrderedDict((titulo, fases) for titulo, fases in base)
     conocidas = {f for fases in grupos.values() for f in fases}
     for fase in dict.fromkeys(n["Fase_Proceso"] for n in nodos):
         if fase not in conocidas:
@@ -148,6 +150,14 @@ def diagrama_general(nodos, por_id, salidas, grupos):
 
 def main():
     excel, salida_detalle, salida_general = sys.argv[1], Path(sys.argv[2]), Path(sys.argv[3])
+    datos = cargar(sys.argv[4]) if len(sys.argv) > 4 else None
+    base = datos.GRUPOS if datos else GRUPOS
+    ROL_TEXTO.update(getattr(datos, "ROL_TEXTO", {}))
+    leyenda = getattr(datos, "LEYENDA", {})
+    leyenda_roles = leyenda.get("roles", getattr(
+        datos, "LEYENDA_ROLES", "celeste = Actora; naranja = Demandada; gris = Tribunal; violeta = Ambas partes."))
+    ejemplo_paralelo = leyenda.get("paralelo", getattr(
+        datos, "EJEMPLO_PARALELO", "la prescripción corre mientras avanza el reclamo"))
     wb = load_workbook(excel)
     nodos = leer_hoja(wb, "Nodos")
     transiciones = leer_hoja(wb, "Transiciones")
@@ -158,7 +168,7 @@ def main():
     for t in sorted(transiciones, key=lambda t: (t["ID_Paso_Origen"], t["Orden"] or 0)):
         salidas[t["ID_Paso_Origen"]].setdefault(t["Condicion_Salida"], []).append(t["ID_Paso_Destino"])
 
-    grupos = grupos_de(nodos)
+    grupos = grupos_de(nodos, base)
     grupo_de = {f: titulo for titulo, fases in grupos.items() for f in fases}
     general = diagrama_general(nodos, por_id, salidas, grupos)
 
@@ -174,12 +184,13 @@ def main():
         "",
         "* **Cada caja es un hito** de la hoja `Nodos`: muestra el ID, el nombre, quién debe actuar y el plazo.",
         "* **Cada flecha es un camino** de la hoja `Transiciones`, rotulado con su condición de salida.",
-        "* **Color de la caja según el responsable:** celeste = Actora; naranja = Demandada; gris = Tribunal; violeta = Ambas partes.",
+        f"* **Color de la caja según el responsable:** {leyenda_roles}",
         "* **Borde grueso:** hito inicial o hito final.",
-        "* **\"Se abren en paralelo\"** (amarillo): esa condición abre varios hitos a la vez; por ejemplo, la prescripción corre mientras avanza el reclamo.",
+        f"* **\"Se abren en paralelo\"** (amarillo): esa condición abre varios hitos a la vez; por ejemplo, {ejemplo_paralelo}.",
         "* **\"Fin de este camino\"** (gris claro): el camino paralelo termina sin abrir otro hito.",
         "* **Cajas blancas con borde discontinuo:** hitos de otra etapa; el texto indica en qué diagrama están. "
         "Las flechas punteadas muestran desde dónde se llega a esta etapa.",
+        *[f"* {linea}" for linea in leyenda.get("adicionales", [])],
         "",
         "## Vista general por fases",
         "",

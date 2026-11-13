@@ -6,12 +6,24 @@ from openpyxl.formatting.rule import FormulaRule
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from openpyxl.worksheet.datavalidation import DataValidation
 
-from datos import (CON_GRACIA, CON_VALOR_CERO, DUDAS, ESTADOS, FASES, FLUJO, NODOS, PLAZO_TIPOS, ROLES,
-                   TRANSICIONES)
+from cargar_datos import cargar, prefijo
 
 CIERRA = "CIERRA_CAMINO"
 SALIDA_XLSX = sys.argv[1]
 SALIDA_MD = sys.argv[2]
+_datos = cargar(sys.argv[3] if len(sys.argv) > 3 else None)
+CON_GRACIA, CON_VALOR_CERO, DUDAS, ESTADOS = _datos.CON_GRACIA, _datos.CON_VALOR_CERO, _datos.DUDAS, _datos.ESTADOS
+FASES, FLUJO, NODOS, PLAZO_TIPOS = _datos.FASES, _datos.FLUJO, _datos.NODOS, _datos.PLAZO_TIPOS
+ROLES, TRANSICIONES = _datos.ROLES, _datos.TRANSICIONES
+PREFIJO = prefijo(NODOS)
+EJEMPLO_PARALELO = getattr(_datos, "EJEMPLO_PARALELO", "la prescripción corre en paralelo con el reclamo")
+INSTRUCCIONES_ADICIONALES = getattr(_datos, "INSTRUCCIONES_ADICIONALES", [])
+ROLES_DESCRIPCION = getattr(_datos, "ROLES_DESCRIPCION", [
+    ("ACTORA", "Debe actuar la parte actora."),
+    ("DEMANDADA", "Debe actuar la parte demandada."),
+    ("TRIBUNAL", "Depende del tribunal (la app muestra 'Esperando resolución')."),
+    ("AMBAS", "Puede o debe actuar cualquiera de las partes (recursos, impugnaciones, audiencias)."),
+])
 
 
 def validar():
@@ -94,7 +106,7 @@ def hoja_instrucciones(wb):
         ("", False),
         ("Hojas", True),
         ("Flujo: datos generales (régimen, versión, quién valida).", False),
-        ("Nodos: un hito por fila. El ID es único (ej. LAB_050). Se numera de 10 en 10 para poder intercalar hitos (ej. LAB_015).", False),
+        (f"Nodos: un hito por fila. El ID es único (ej. {PREFIJO}_050). Se numera de 10 en 10 para poder intercalar hitos (ej. {PREFIJO}_015).", False),
         ("Transiciones: un camino por fila. Si un hito tiene 3 salidas posibles, ocupa 3 filas con el mismo origen y distinta condición.", False),
         ("Dudas_a_validar: preguntas abiertas que hay que responder para cerrar la matriz.", False),
         ("Valores: listas de valores permitidos (no modificar sin avisar al equipo técnico).", False),
@@ -104,11 +116,12 @@ def hoja_instrucciones(wb):
         ("2. Plazo_Tipo FECHA_FIJADA (audiencias): el valor es 0; el abogado carga la fecha y hora del acto en cada expediente.", False),
         ("3. Aplica_Gracia = SI solo en HABILES_JUDICIALES, CORRIDOS, MESES y ANIOS. La hoja Valores explica cada tipo de plazo.", False),
         ("4. Checklist_Abogado y Documentacion_Requerida: separar cada ítem con punto y coma ( ; ).", False),
-        ("5. Caminos en paralelo: si la misma condición de salida aparece en varias filas con distinto destino, se abren todos esos hitos a la vez (ej. la prescripción corre en paralelo con el reclamo).", False),
+        (f"5. Caminos en paralelo: si la misma condición de salida aparece en varias filas con distinto destino, se abren todos esos hitos a la vez (ej. {EJEMPLO_PARALELO}).", False),
         ("6. Destino CIERRA_CAMINO: la fila cierra ese camino paralelo sin abrir otro hito. El destino nunca queda vacío.", False),
         ("7. Día Cero: el plazo empieza a correr el día hábil siguiente al Evento_Disparador.", False),
         ("8. Un solo nodo con Es_Inicial = SI. Los nodos con Es_Final = SI no tienen transiciones de salida.", False),
         ("", False),
+        *INSTRUCCIONES_ADICIONALES,
         ("Columnas de control (encabezado gris oscuro)", True),
         ("Se calculan solas y marcan en rojo los errores: IDs duplicados, hitos sin salida o sin entrada, destinos inexistentes y plazos incoherentes. No hay que editarlas.", False),
         ("Las columnas Estado_Validacion y Comentarios no se importan a la app.", False),
@@ -149,15 +162,9 @@ def hoja_valores(wb):
         ws.cell(row=i, column=7, value=t)
         c = ws.cell(row=i, column=8, value=d)
         c.alignment = WRAP
-    roles = [
-        ("ACTORA", "Debe actuar la parte actora."),
-        ("DEMANDADA", "Debe actuar la parte demandada."),
-        ("TRIBUNAL", "Depende del tribunal (la app muestra 'Esperando resolución')."),
-        ("AMBAS", "Puede o debe actuar cualquiera de las partes (recursos, impugnaciones, audiencias)."),
-    ]
     base = len(PLAZO_TIPOS) + 4
     ws.cell(row=base, column=7, value="Rol_Responsable").font = Font(bold=True)
-    for i, (r, d) in enumerate(roles, start=base + 1):
+    for i, (r, d) in enumerate(ROLES_DESCRIPCION, start=base + 1):
         ws.cell(row=i, column=7, value=r)
         ws.cell(row=i, column=8, value=d).alignment = WRAP
 

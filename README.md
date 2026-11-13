@@ -30,4 +30,11 @@ Este repositorio es **solo documental**: contiene la definición funcional, téc
 | `matriz_flujo_laboral_pba_ley_11653.xlsx` | Matriz de ejemplo del flujo laboral, para validar con el abogado. |
 | `reunion_validacion_12_11_2026.md` | Preparación de la reunión con el abogado: agenda, las 36 dudas ordenadas por impacto, propuesta y postura por defecto de cada una, y pasos posteriores. |
 | `diagrama_flujo_laboral_pba_ley_11653.md` | Diagramas Mermaid generados desde la matriz. |
+| `laboral/` | Una matriz y un diagrama por tipo de reclamo laboral: indemnización por despido, accidentes de trabajo y enfermedades profesionales, y reclamos salariales. Ver `laboral/README.md`. |
+| `civil/` | Una matriz y un diagrama por tipo de proceso del fuero Civil y Comercial de PBA: sucesorio, daños y perjuicios, desalojo, prescripción adquisitiva e incumplimiento contractual. Ver `civil/README.md`. |
+| `sucesorio_pba/` | Matriz y diagrama del proceso sucesorio en PBA (ab intestato y testamentario), primer flujo del fuero Civil y Comercial, para validar con el abogado. Ver `sucesorio_pba/README.md`. |
+| `comercial/` | Una matriz y un diagrama por tipo de proceso de Derecho Comercial en PBA: concursos y quiebras, juicios ejecutivos y cobro de pesos, y conflictos societarios. Ver `comercial/README.md`. |
+| `familia/` | Una matriz y un diagrama por tipo de proceso del fuero de Familia de PBA: alimentos, divorcio, cuidado personal y régimen de comunicación, violencia familiar y adopción. Ver `familia/README.md`. |
+| `penal/` | Una matriz y un diagrama por flujo del fuero Penal de PBA: investigación penal preparatoria, juicio oral, juicio abreviado y hábeas corpus. Ver `penal/README.md`. |
+| `publico/` | Una matriz y un diagrama por tipo de proceso de Derecho Público y Constitucional: contencioso administrativo, seguridad social, amparo y hábeas data. Ver `publico/README.md`. |
 | `herramientas/` | Scripts para regenerar la matriz, los diagramas y las tablas del documento de proyecto. Ver `herramientas/README.md`. |

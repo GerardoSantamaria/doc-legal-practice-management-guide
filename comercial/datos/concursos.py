@@ -1,0 +1,909 @@
+from comun import CON_GRACIA, CON_VALOR_CERO, ESTADOS, PLAZO_TIPOS, ROLES, flujo
+from comun import FASES as FASES_BASE
+from comun import GRUPOS as GRUPOS_BASE
+from comun import LEYENDA as LEYENDA_BASE
+
+FASES = FASES_BASE[:1] + [
+    "Apertura", "Verificación", "Informe general", "Exclusividad y acuerdo", "Homologación y cumplimiento",
+    "Cramdown", "APE", "Quiebra", "Efectos de la quiebra", "Acciones de la quiebra", "Liquidación", "Conclusión",
+] + FASES_BASE[-1:]
+
+GRUPOS = GRUPOS_BASE[:1] + [
+    ("Concurso preventivo: presentación y apertura", ["Apertura"]),
+    ("Verificación de créditos (concurso preventivo y quiebra)", ["Verificación"]),
+    ("Informe general y categorización", ["Informe general"]),
+    ("Período de exclusividad y acuerdo", ["Exclusividad y acuerdo"]),
+    ("Homologación, cumplimiento y salvataje (art. 48)", ["Homologación y cumplimiento", "Cramdown"]),
+    ("Acuerdo preventivo extrajudicial", ["APE"]),
+    ("Quiebra: pedido y sentencia", ["Quiebra"]),
+    ("Quiebra: efectos de la sentencia", ["Efectos de la quiebra"]),
+    ("Quiebra: acciones de recomposición", ["Acciones de la quiebra"]),
+    ("Quiebra: liquidación, distribución y conclusión", ["Liquidación", "Conclusión"]),
+    ("Honorarios y cierre", ["Cierre"]),
+]
+
+ROL_TEXTO = {"ACTORA": "Deudor", "DEMANDADA": "Acreedores", "TRIBUNAL": "Juzgado o síndico",
+             "AMBAS": "Cualquier interesado"}
+
+EJEMPLO_PARALELO = ("al abrirse el concurso corren a la vez la publicación de edictos, la entrega de libros, la "
+                    "carta del síndico, el plazo de verificación y los efectos sobre los juicios")
+
+LEYENDA = {
+    "roles": "celeste = deudor (concursado o fallido); naranja = acreedores; gris = juzgado, síndico, comité de "
+             "control o enajenador; violeta = cualquier interesado.",
+    "paralelo": EJEMPLO_PARALELO,
+    "adicionales": LEYENDA_BASE["adicionales"] + [
+        "**Cronograma del juez (\"Fecha y hora fijadas por el tribunal\"):** el auto de apertura o la sentencia de "
+        "quiebra fija de una vez las fechas de verificación, informes y audiencia informativa; cada fecha se carga "
+        "en su hito al abrirse (duda D03).",
+        "**Hitos compartidos:** la verificación y el informe general valen para el concurso preventivo y para la "
+        "quiebra; la condición de salida dice por qué camino sigue.",
+    ],
+}
+
+ROLES_DESCRIPCION = [
+    ("ACTORA", "Debe actuar el deudor (concursado, fallido o quien negocia el APE)."),
+    ("DEMANDADA", "Deben actuar los acreedores (verificación, impugnación, pedido de quiebra, cobro del dividendo)."),
+    ("TRIBUNAL", "Depende del juzgado, del síndico, del comité de control, del evaluador o del enajenador (la app "
+                 "muestra 'Esperando resolución')."),
+    ("AMBAS", "Puede actuar cualquier interesado: deudor, acreedores o síndico (observaciones, revisión, "
+              "audiencias, recursos)."),
+]
+
+INSTRUCCIONES_ADICIONALES = [
+    ("Roles en este flujo", True),
+    ("ACTORA es el deudor y DEMANDADA son los acreedores, aunque en el concurso no haya demanda. Si el estudio "
+     "representa a un acreedor, los hitos 'de la otra parte' son los del deudor (duda D26).", False),
+    ("", False),
+]
+
+FLUJO = flujo(
+    "Concursos y quiebras - Provincia de Buenos Aires",
+    "Ley 24.522 de Concursos y Quiebras; CPCCBA (Decreto-Ley 7425/68) supletorio (art. 278 LCQ)",
+    "Concurso preventivo, acuerdo preventivo extrajudicial y quiebra (pedida, propia o indirecta). Los plazos de la "
+    "LCQ son de días hábiles judiciales salvo que la ley diga otra cosa (art. 273 inc. 2). Muchas fechas las fija el "
+    "juez en el auto de apertura o en la sentencia de quiebra y se cargan como fecha fijada. Las citas marcadas "
+    "'a verificar' no se usan hasta que el abogado las confirme.",
+)
+
+# id, fase, nombre, rol, evento, valor, tipo, gracia, base, inicial, final, checklist, documentacion
+PREVIA = [
+    ("CYQ_010", "Previa", "Diagnóstico de la insolvencia y elección de la vía", "ACTORA",
+     "Primera consulta por cesación de pagos (del deudor o de un acreedor)", 0, "SIN_PLAZO", "NO",
+     "Arts. 1, 2, 3, 5, 69, 77 a 79 y 288 LCQ", "SI", "NO",
+     ["Verificar que el deudor sea concursable (art. 2) y el juez competente según su domicilio o sede (art. 3)",
+      "Elegir la vía: acuerdo preventivo extrajudicial, concurso preventivo o quiebra propia",
+      "Verificar si es pequeño concurso (art. 288: pasivo menor a 300 SMVM, hasta 20 quirografarios o hasta 20 "
+      "trabajadores): no hay comité ni salvataje del art. 48 (art. 289)",
+      "Persona humana: revisar los bienes excluidos del desapoderamiento (art. 108) y la inhabilitación "
+      "(arts. 234 a 238)",
+      "Si el cliente es un acreedor: reunir el título y los hechos reveladores (art. 79) para pedir la quiebra, o "
+      "verificar si el deudor ya está concursado"],
+     ["Estados contables", "Estado de situación patrimonial", "Nómina de acreedores",
+      "Estatuto e inscripciones (persona jurídica)"]),
+    ("CYQ_020", "Previa", "Resolución del órgano de administración y armado de la presentación", "ACTORA",
+     "Decisión de pedir el concurso preventivo", 0, "SIN_PLAZO", "NO", "Arts. 6 y 11 LCQ", "NO", "NO",
+     ["Persona jurídica: acta del órgano de administración que decide la presentación (art. 6)",
+      "Reunir los requisitos del art. 11: causas, estado del activo y pasivo con dictamen de contador, estados "
+      "contables de los tres últimos ejercicios, nómina de acreedores con legajos, libros, otros concursos y nómina "
+      "de empleados con la certificación de deuda laboral y previsional (inc. 8)",
+      "Prever la tasa de justicia, el bono y los aportes (dudas D15 y D16)"],
+     ["Acta del órgano de administración", "Estado de situación patrimonial con dictamen de contador",
+      "Estados contables", "Nómina de acreedores y legajos", "Nómina de empleados", "Libros de comercio"]),
+    ("CYQ_030", "Previa", "Negociación del acuerdo preventivo extrajudicial", "ACTORA",
+     "Decisión de negociar un acuerdo extrajudicial con los acreedores", 0, "SIN_PLAZO", "NO",
+     "Arts. 69, 70 y 73 LCQ", "NO", "NO",
+     ["El deudor debe estar en cesación de pagos o en dificultades económicas o financieras de carácter general "
+      "(art. 69)",
+      "Instrumento privado con firmas y representaciones certificadas por escribano (art. 70)",
+      "Mayorías: absoluta de acreedores quirografarios y dos tercios del pasivo quirografario total (art. 73)",
+      "Preparar la documentación certificada por contador del art. 72"],
+     ["Acuerdo firmado con firmas certificadas", "Documentos habilitantes de los firmantes"]),
+]
+
+APERTURA = [
+    ("CYQ_100", "Apertura", "Presentación en concurso preventivo", "ACTORA",
+     "Presentación del escrito de concurso preventivo", 0, "SIN_PLAZO", "NO", "Arts. 5, 6, 11, 15 y 16 LCQ",
+     "NO", "NO",
+     ["Acompañar los requisitos del art. 11 o pedir el plazo para completarlos",
+      "Pagar el bono de la Ley 8480 y el anticipo previsional del art. 13 Ley 6716; verificar cuándo se paga la "
+      "tasa de justicia (duda D15)",
+      "Desde la presentación: administración con vigilancia del síndico y actos que requieren autorización "
+      "(arts. 15 y 16)",
+      "Desde la presentación se suspenden los intereses de los créditos quirografarios (art. 19) y corre el plazo "
+      "de 2 años de la verificación tardía (art. 56)"],
+     ["Escrito de presentación", "Documentación del art. 11"]),
+    ("CYQ_105", "Apertura", "Ratificación por el órgano de gobierno", "ACTORA",
+     "Presentación en concurso de la persona jurídica", 30, "HABILES_JUDICIALES", "SI",
+     "Art. 6 LCQ; art. 273 inc. 2 LCQ", "NO", "NO",
+     ["Acompañar la resolución de la asamblea o reunión de socios que decide continuar, con mayoría de asuntos "
+      "ordinarios",
+      "Sin ratificación, el procedimiento cesa de pleno derecho con efectos de desistimiento",
+      "Persona humana: no corresponde, cerrar este camino"],
+     ["Acta de asamblea o de reunión de socios"]),
+    ("CYQ_110", "Apertura", "Completar los requisitos del art. 11", "ACTORA",
+     "Notificación de la providencia que concede el plazo", 10, "HABILES_JUDICIALES", "SI",
+     "Art. 11, último párrafo, LCQ", "NO", "NO",
+     ["El plazo es improrrogable",
+      "Si no se completa, el juez rechaza la presentación (art. 13)"],
+     ["Documentación faltante del art. 11"]),
+    ("CYQ_120", "Apertura", "Resolución de apertura o rechazo", "TRIBUNAL",
+     "Presentación completa", 5, "HABILES_JUDICIALES", "NO", "Arts. 13 y 14 LCQ", "NO", "NO",
+     ["El juez resuelve dentro de los 5 días",
+      "Leer el auto de apertura y cargar en la app las fechas que fija: verificación (inc. 3), informes individual y "
+      "general (inc. 9) y audiencia informativa (inc. 10), en los hitos CYQ_200, CYQ_220, CYQ_310 y CYQ_420",
+      "Controlar la inhibición general (inc. 7), el comité de control (inc. 13) y el sorteo del síndico",
+      "La resolución que rechaza la apertura es apelable (art. 13)"],
+     ["Auto de apertura"]),
+    ("CYQ_125", "Apertura", "Apelación del rechazo de la apertura", "ACTORA",
+     "Notificación de la resolución que rechaza la apertura", 5, "HABILES_JUDICIALES", "SI",
+     "Arts. 13 y 273 incs. 1 y 4 LCQ", "NO", "NO",
+     ["Apelar dentro de los 5 días; se concede en relación y con efecto suspensivo (art. 273 inc. 4)",
+      "Fundar en el plazo del memorial (art. 246 CPCCBA, supletorio; a verificar)",
+      "Controlar si hay pedidos de quiebra en trámite contra el deudor"],
+     ["Escrito de apelación"]),
+    ("CYQ_130", "Apertura", "Publicación de edictos del concurso", "ACTORA",
+     "Notificación por ministerio de la ley del auto de apertura", 5, "HABILES_JUDICIALES", "SI",
+     "Arts. 27, 28 y 30 LCQ", "NO", "NO",
+     ["Publicar por 5 días en el diario de publicaciones legales y en otro de amplia circulación (art. 27)",
+      "Si hay establecimientos en otra jurisdicción, publicar también allí en el plazo que fije el juez, que no "
+      "excede 20 días (art. 28)",
+      "Acreditar los recibos y la publicación dentro del quinto día de la primera aparición (art. 28)",
+      "Si no se publica en término, el concurso se tiene por desistido (art. 30)"],
+     ["Recibos de publicación", "Ejemplares de los edictos"]),
+    ("CYQ_140", "Apertura", "Presentación de libros y depósito de gastos de correspondencia", "ACTORA",
+     "Notificación por ministerio de la ley del auto de apertura", 3, "HABILES_JUDICIALES", "SI",
+     "Art. 14 incs. 5 y 8 LCQ; art. 30 LCQ", "NO", "NO",
+     ["Presentar los libros de comercio para que el secretario ponga la nota de apertura (inc. 5)",
+      "Depositar el importe que fije el juez para los gastos de correspondencia del síndico (inc. 8)",
+      "Si no se deposita, el concurso se tiene por desistido (art. 30)"],
+     ["Libros de comercio", "Comprobante del depósito"]),
+    ("CYQ_150", "Apertura", "Aceptación del cargo del síndico y cartas a los acreedores", "TRIBUNAL",
+     "Primera publicación de edictos", 5, "HABILES_JUDICIALES", "NO", "Arts. 14 inc. 2, 29 y 253 LCQ", "NO", "NO",
+     ["El síndico es un contador sorteado de la lista de la Cámara (art. 253)",
+      "Envía carta certificada a cada acreedor denunciado y al comité de control dentro de los 5 días de la primera "
+      "publicación (art. 29); la omisión no invalida el proceso",
+      "Controlar el domicilio y el horario de atención del síndico para la verificación"],
+     ["Constancia de aceptación del cargo"]),
+    ("CYQ_155", "Apertura", "Informe sobre pasivos laborales y pronto pago", "TRIBUNAL",
+     "Aceptación del cargo del síndico", 10, "HABILES_JUDICIALES", "NO", "Arts. 14 inc. 11 y 16 LCQ", "NO", "NO",
+     ["El síndico informa los pasivos laborales y si existen otros créditos laborales con preferencia (art. 14 "
+      "inc. 11)",
+      "El juez autoriza el pronto pago de los créditos laborales comprendidos dentro de los 10 días del informe "
+      "(art. 16)",
+      "El acreedor laboral puede pedir el pronto pago sin verificar (duda D08)"],
+     ["Informe del síndico"]),
+    ("CYQ_160", "Apertura", "Suspensión de juicios y fuero de atracción", "AMBAS",
+     "Publicación de los edictos del concurso", 0, "SIN_PLAZO", "NO", "Arts. 21, 24, 25 y 26 LCQ", "NO", "NO",
+     ["Se suspenden y se radican en el concurso los juicios de contenido patrimonial por causa anterior (art. 21)",
+      "Excluidos: expropiación, familia, ejecuciones de garantías reales, procesos de conocimiento en trámite y "
+      "laborales (salvo opción por verificar), litisconsorcio pasivo necesario y extinción de dominio (art. 21 "
+      "incs. 1 a 4)",
+      "Las subastas de bienes con garantía real pueden suspenderse hasta 90 días (art. 24)",
+      "Viajes al exterior de más de 40 días: pedir autorización (art. 25)",
+      "Juicios llevados por el estudio contra el concursado: pedir la radicación o seguir en el tribunal de origen "
+      "y verificar con la sentencia (duda D09)"],
+     ["Listado de juicios en trámite"]),
+    ("CYQ_165", "Apertura", "Contratos con prestaciones recíprocas pendientes", "ACTORA",
+     "Resolución de apertura del concurso", 30, "HABILES_JUDICIALES", "SI", "Art. 20 LCQ", "NO", "NO",
+     ["Pedir autorización al juez para continuar los contratos en curso; resuelve con vista al síndico",
+      "Sin autorización comunicada en el plazo, el cocontratante puede resolver el contrato (art. 20, a verificar "
+      "el cómputo)",
+      "Los servicios públicos no pueden suspenderse por deudas anteriores (art. 20, a verificar)"],
+     ["Pedido de autorización"]),
+]
+
+VERIFICACION = [
+    ("CYQ_200", "Verificación", "Pedidos de verificación ante el síndico", "DEMANDADA",
+     "Fecha límite fijada en el auto de apertura o en la sentencia de quiebra", 0, "FECHA_FIJADA", "NO",
+     "Arts. 14 inc. 3, 32, 88 y 200 LCQ", "NO", "NO",
+     ["Cargar la fecha fijada por el juez: entre 15 y 20 días después de la última publicación (art. 14 inc. 3) o "
+      "hasta 20 días en la quiebra (art. 88)",
+      "Pedir la verificación por escrito, en duplicado, con los títulos, monto, causa y privilegio (art. 32)",
+      "Pagar al síndico el arancel del 10% del SMVM por pedido, salvo las exenciones legales (art. 32; duda D07)",
+      "El pedido interrumpe la prescripción e impide la caducidad (art. 32)",
+      "En la quiebra indirecta no verifican de nuevo los ya verificados en el concurso (art. 202)"],
+     ["Pedido de verificación", "Títulos justificativos", "Comprobante del arancel"]),
+    ("CYQ_210", "Verificación", "Período de observación de los pedidos", "AMBAS",
+     "Vencimiento del plazo para pedir la verificación", 10, "HABILES_JUDICIALES", "SI", "Art. 34 LCQ", "NO", "NO",
+     ["Revisar los legajos en el domicilio del síndico",
+      "Presentar las observaciones por escrito con dos copias y pedir constancia de recepción",
+      "El síndico presenta las observaciones en el juzgado dentro de las 48 horas de vencido el plazo"],
+     ["Escrito de observaciones"]),
+    ("CYQ_220", "Verificación", "Informe individual del síndico", "TRIBUNAL",
+     "Fecha fijada en el auto de apertura (20 días después del vencimiento de las observaciones)", 0,
+     "FECHA_FIJADA", "NO", "Arts. 14 inc. 9 y 35 LCQ", "NO", "NO",
+     ["Cargar la fecha fijada en el auto de apertura",
+      "Revisar la opinión fundada del síndico sobre cada crédito y privilegio"],
+     ["Informe individual"]),
+    ("CYQ_230", "Verificación", "Resolución de verificación de créditos (art. 36)", "TRIBUNAL",
+     "Presentación del informe individual", 10, "HABILES_JUDICIALES", "NO", "Art. 36 LCQ", "NO", "NO",
+     ["El juez declara cada crédito verificado, admisible o inadmisible",
+      "Desde la fecha en que debe dictarse corren la categorización (10 días, art. 41) y la revisión "
+      "(20 días, art. 37)"],
+     ["Resolución del art. 36"]),
+    ("CYQ_240", "Verificación", "Incidente de revisión", "AMBAS",
+     "Fecha de la resolución del art. 36", 20, "HABILES_JUDICIALES", "SI", "Arts. 37, 38 y 280 a 282 LCQ",
+     "NO", "NO",
+     ["Lo pide el acreedor declarado admisible o inadmisible, o el deudor, dentro de los 20 días",
+      "Tramita por incidente en pieza separada: traslado de 10 días (art. 281) y prueba en no más de 20 días "
+      "(art. 282)",
+      "Sin revisión, la resolución queda firme y hace cosa juzgada, salvo dolo",
+      "La acción por dolo prescribe a los 90 días de la resolución (art. 38, a verificar el cómputo)",
+      "Ver la duda de producto sobre incidentes (D27)"],
+     ["Escrito de revisión", "Prueba"]),
+    ("CYQ_250", "Verificación", "Verificación tardía", "DEMANDADA",
+     "Presentación en concurso preventivo", 2, "ANIOS", "NO", "Art. 56 LCQ; art. 223 LCQ en la quiebra",
+     "NO", "NO",
+     ["Pedirla por incidente mientras tramite el concurso o, concluido, por la acción individual",
+      "Si el título es una sentencia de un juicio excluido del fuero de atracción, hay 6 meses desde que quedó "
+      "firme",
+      "Vencidos esos plazos, la acción prescribe",
+      "En la quiebra, el tardío solo participa de las distribuciones complementarias (art. 223)"],
+     ["Escrito de verificación tardía", "Títulos justificativos"]),
+]
+
+INFORME_GENERAL = [
+    ("CYQ_300", "Informe general", "Propuesta de categorización de los acreedores", "ACTORA",
+     "Fecha en que debe dictarse la resolución del art. 36", 10, "HABILES_JUDICIALES", "SI", "Art. 41 LCQ",
+     "NO", "NO",
+     ["Presentar la propuesta fundada al síndico y al juzgado",
+      "Agrupar por monto, naturaleza de las prestaciones, privilegio u otro criterio razonable",
+      "Controlar las categorías mínimas que exige el art. 41 (a verificar)"],
+     ["Propuesta de categorización"]),
+    ("CYQ_310", "Informe general", "Informe general del síndico", "TRIBUNAL",
+     "Fecha fijada en el auto de apertura o en la sentencia de quiebra (30 días después del informe individual)",
+     0, "FECHA_FIJADA", "NO", "Arts. 14 inc. 9, 39 y 200 LCQ", "NO", "NO",
+     ["Cargar la fecha fijada",
+      "Revisar causas del desequilibrio, activo, pasivo, fecha de cesación de pagos, actos revocables y "
+      "responsabilidades (art. 39)"],
+     ["Informe general"]),
+    ("CYQ_320", "Informe general", "Observaciones al informe general", "AMBAS",
+     "Presentación del informe general", 10, "HABILES_JUDICIALES", "SI", "Art. 40 LCQ", "NO", "NO",
+     ["Las presentan el deudor y los acreedores verificados o declarados admisibles",
+      "No hay sustanciación; el juez las considera al resolver"],
+     ["Escrito de observaciones"]),
+    ("CYQ_330", "Informe general", "Resolución de categorización y comité de control", "TRIBUNAL",
+     "Vencimiento del plazo de observaciones al informe general", 10, "HABILES_JUDICIALES", "NO", "Art. 42 LCQ",
+     "NO", "NO",
+     ["El juez fija las categorías y constituye el comité de control",
+      "Desde su notificación por ministerio de la ley corre el período de exclusividad (art. 43)"],
+     ["Resolución de categorización"]),
+]
+
+EXCLUSIVIDAD = [
+    ("CYQ_400", "Exclusividad y acuerdo", "Vencimiento del período de exclusividad: acompañar las conformidades",
+     "ACTORA", "Fecha fijada por el juez (90 días desde la notificación de la resolución del art. 42; ampliable "
+     "hasta 30 días)", 0, "FECHA_FIJADA", "NO", "Arts. 43, 45 y 46 LCQ", "NO", "NO",
+     ["Cargar la fecha de vencimiento fijada por el juez",
+      "Obtener la mayoría absoluta de acreedores y dos tercios del capital computable en cada categoría (art. 45)",
+      "Conformidades por escrito con firma certificada por escribano o autoridad judicial; solo valen las de fecha "
+      "posterior a la última propuesta",
+      "Sin conformidades: quiebra (art. 46) o salvataje del art. 48 en sociedades comprendidas"],
+     ["Texto de la propuesta", "Conformidades con firma certificada"]),
+    ("CYQ_410", "Exclusividad y acuerdo", "Propuesta de acuerdo pública en el expediente", "ACTORA",
+     "Vencimiento del período de exclusividad", 20, "ANTICIPACION_HABILES_JUDICIALES", "NO", "Art. 43 LCQ",
+     "NO", "NO",
+     ["Presentar el texto de la propuesta con no menos de 20 días de anticipación al vencimiento",
+      "Las propuestas pueden ser quita, espera, entrega de bienes, capitalización y otras (art. 43)",
+      "Las modificaciones posteriores invalidan las conformidades anteriores (art. 45)"],
+     ["Propuesta de acuerdo"]),
+    ("CYQ_420", "Exclusividad y acuerdo", "Audiencia informativa", "AMBAS",
+     "Fecha fijada en el auto de apertura (5 días antes del fin de la exclusividad)", 0, "FECHA_FIJADA", "NO",
+     "Arts. 14 inc. 10 y 45 LCQ", "NO", "NO",
+     ["Cargar la fecha fijada",
+      "El deudor da explicaciones sobre la negociación y los acreedores pueden preguntar"],
+     ["Acta de la audiencia"]),
+    ("CYQ_440", "Exclusividad y acuerdo", "Resolución sobre la existencia de acuerdo", "TRIBUNAL",
+     "Acreditación de las conformidades en el expediente", 3, "HABILES_JUDICIALES", "NO", "Art. 49 LCQ", "NO", "NO",
+     ["Controlar el cómputo de las mayorías en cada categoría",
+      "Desde la notificación por ministerio de la ley corre el plazo de impugnación"],
+     ["Resolución del art. 49"]),
+    ("CYQ_450", "Exclusividad y acuerdo", "Impugnación del acuerdo", "DEMANDADA",
+     "Notificación por ministerio de la ley de la resolución del art. 49", 5, "HABILES_JUDICIALES", "SI",
+     "Arts. 50 y 51 LCQ", "NO", "NO",
+     ["Solo por error en las mayorías, falta de representación, exageración fraudulenta del pasivo, ocultación o "
+      "exageración del activo, o inobservancia de formas esenciales (art. 50)",
+      "Pueden impugnar los acreedores con derecho a voto y los que dedujeron incidente",
+      "Si se admite, se declara la quiebra o se abre el salvataje del art. 48 (art. 51)"],
+     ["Escrito de impugnación"]),
+]
+
+HOMOLOGACION = [
+    ("CYQ_460", "Homologación y cumplimiento", "Homologación del acuerdo", "TRIBUNAL",
+     "Vencimiento del plazo de impugnación o resolución de las impugnaciones", 0, "SIN_PLAZO", "NO",
+     "Arts. 52 y 53 LCQ", "NO", "NO",
+     ["El juez no homologa una propuesta abusiva o en fraude a la ley (art. 52 inc. 4)",
+      "Puede imponer el acuerdo a una categoría disidente con los requisitos del art. 52 inc. 2 b",
+      "La homologación dispone las medidas para su cumplimiento (art. 53)",
+      "Es la oportunidad de regular los honorarios (art. 265)"],
+     ["Auto de homologación"]),
+    ("CYQ_475", "Homologación y cumplimiento", "Pago de los honorarios del concurso", "ACTORA",
+     "Auto de homologación", 90, "HABILES_JUDICIALES", "NO", "Art. 54 LCQ", "NO", "NO",
+     ["Son exigibles a los 90 días de la homologación, o con la primera cuota del acuerdo si vence antes",
+      "La falta de pago habilita a pedir la quiebra"],
+     ["Comprobantes de pago"]),
+    ("CYQ_480", "Homologación y cumplimiento", "Conclusión del concurso y cumplimiento del acuerdo", "TRIBUNAL",
+     "Homologación y ejecución de las medidas para su cumplimiento", 0, "SIN_PLAZO", "NO", "Art. 59 LCQ",
+     "NO", "NO",
+     ["El juez declara concluido el concurso y termina la intervención del síndico",
+      "Se mantiene la inhibición general durante el cumplimiento, salvo conformidad de los acreedores",
+      "Cumplido el acuerdo, pedir la declaración de cumplimiento y el levantamiento de la inhibición",
+      "Controlar el vencimiento de cada cuota del acuerdo"],
+     ["Resolución de conclusión", "Comprobantes de pago de las cuotas"]),
+    ("CYQ_485", "Homologación y cumplimiento", "Nulidad del acuerdo homologado", "DEMANDADA",
+     "Auto que dispone la homologación del acuerdo", 6, "MESES", "NO", "Arts. 60 a 62 LCQ", "NO", "NO",
+     ["Plazo de caducidad de 6 meses",
+      "Solo por dolo para exagerar el pasivo, aparentar privilegios u ocultar o exagerar el activo, descubierto "
+      "después del plazo de impugnación",
+      "Declarada la nulidad, se declara la quiebra"],
+     ["Escrito de nulidad"]),
+    ("CYQ_490", "Homologación y cumplimiento", "Incumplimiento del acuerdo", "DEMANDADA",
+     "Vencimiento impago de una obligación del acuerdo", 0, "SIN_PLAZO", "NO", "Arts. 63 y 64 LCQ", "NO", "NO",
+     ["Lo pide el acreedor interesado o los controladores del acuerdo",
+      "El juez da vista al deudor y a los controladores antes de resolver",
+      "La resolución es apelable, pero no suspende las medidas de los arts. 177 a 199"],
+     ["Escrito de pedido de quiebra por incumplimiento"]),
+]
+
+CRAMDOWN = [
+    ("CYQ_500", "Cramdown", "Registro de interesados en el salvataje (art. 48)", "AMBAS",
+     "Resolución que abre el registro (dentro de 2 días de vencida la exclusividad sin conformidades)", 5,
+     "HABILES_JUDICIALES", "SI", "Art. 48 incs. 1 y 2 LCQ", "NO", "NO",
+     ["Solo para SRL, sociedades por acciones, cooperativas y sociedades con participación estatal, con las "
+      "exclusiones del art. 48",
+      "Se inscriben acreedores, la cooperativa de trabajo de la empresa y terceros, depositando el importe para "
+      "edictos",
+      "Sin inscriptos, el juez declara la quiebra",
+      "No rige en los pequeños concursos (art. 289)"],
+     ["Escrito de inscripción", "Comprobante del depósito"]),
+    ("CYQ_510", "Cramdown", "Valuación de las cuotas o acciones", "TRIBUNAL",
+     "Aceptación del cargo del evaluador", 30, "HABILES_JUDICIALES", "NO", "Arts. 48 inc. 3 y 262 LCQ", "NO", "NO",
+     ["La valuación puede observarse en 5 días, sin sustanciación",
+      "El juez fija el valor de las cuotas o acciones; la resolución es inapelable"],
+     ["Informe del evaluador"]),
+    ("CYQ_520", "Cramdown", "Período para obtener las conformidades en el salvataje", "AMBAS",
+     "Resolución que fija el valor de las cuotas o acciones", 20, "HABILES_JUDICIALES", "SI",
+     "Art. 48 incs. 4 y siguientes y art. 48 bis LCQ (a verificar el disparador)", "NO", "NO",
+     ["Compiten los inscriptos y el deudor; gana el primero que acredite las conformidades",
+      "Audiencia informativa 5 días antes del vencimiento",
+      "Si el tercero obtiene el acuerdo, deposita el precio de las participaciones en 3 días desde la "
+      "homologación (art. 53)",
+      "Cooperativa de trabajo: régimen del art. 48 bis"],
+     ["Propuesta y conformidades con firma certificada"]),
+]
+
+APE = [
+    ("CYQ_600", "APE", "Pedido de homologación del acuerdo extrajudicial", "ACTORA",
+     "Firma del acuerdo con las mayorías", 0, "SIN_PLAZO", "NO", "Arts. 69, 72, 73 y 74 LCQ", "NO", "NO",
+     ["Presentar el acuerdo con los documentos del art. 72 certificados por contador",
+      "Publicar edictos por 5 días (art. 74)",
+      "Desde la orden de publicar edictos se suspenden las acciones de contenido patrimonial (art. 72, a "
+      "verificar el alcance)"],
+     ["Acuerdo con firmas certificadas", "Documentación del art. 72 certificada por contador"]),
+    ("CYQ_620", "APE", "Oposiciones a la homologación del APE", "DEMANDADA",
+     "Última publicación de edictos", 10, "HABILES_JUDICIALES", "SI", "Art. 75 LCQ", "NO", "NO",
+     ["Pueden oponerse los acreedores denunciados y los que demuestren su calidad",
+      "Solo por omisiones o exageraciones del activo o pasivo, o por no alcanzar las mayorías",
+      "Si hay prueba, se produce en 10 días"],
+     ["Escrito de oposición"]),
+    ("CYQ_630", "APE", "Resolución sobre la homologación del APE", "TRIBUNAL",
+     "Vencimiento del plazo de oposición o de la prueba", 10, "HABILES_JUDICIALES", "NO", "Arts. 75 y 76 LCQ",
+     "NO", "NO",
+     ["Homologado, produce los efectos del art. 56 frente a todos los quirografarios anteriores (art. 76)",
+      "Queda sometido a las reglas de nulidad e incumplimiento del concurso preventivo (art. 76)"],
+     ["Resolución de homologación"]),
+]
+
+QUIEBRA = [
+    ("CYQ_700", "Quiebra", "Pedido de quiebra por un acreedor", "DEMANDADA",
+     "Decisión del acreedor de pedir la quiebra", 0, "SIN_PLAZO", "NO", "Arts. 77 inc. 2, 78 a 83 y 85 LCQ",
+     "NO", "NO",
+     ["Acreditar un crédito exigible y los hechos reveladores de la cesación de pagos (arts. 79 y 83)",
+      "Evaluar medidas precautorias: inhibición general o intervención controlada (art. 85)",
+      "El pedido no es una vía de cobro: el pago posterior queda sujeto al art. 122",
+      "Pagar bono y anticipo previsional; verificar la tasa de justicia (duda D15)"],
+     ["Escrito de pedido de quiebra", "Título del crédito"]),
+    ("CYQ_705", "Quiebra", "Citación al deudor (art. 84)", "ACTORA",
+     "Notificación de la citación", 5, "HABILES_JUDICIALES", "SI", "Arts. 84 y 87 LCQ", "NO", "NO",
+     ["Invocar y probar todo lo que haga al derecho del deudor dentro del quinto día",
+      "No hay juicio de antequiebra",
+      "El acreedor puede desistir solo antes de la citación (art. 87)",
+      "Evaluar el depósito en pago o a embargo (duda D17)"],
+     ["Escrito de contestación", "Prueba"]),
+    ("CYQ_710", "Quiebra", "Pedido de quiebra propia", "ACTORA",
+     "Decisión del deudor de pedir su quiebra", 0, "SIN_PLAZO", "NO", "Arts. 82, 86 y 87 LCQ", "NO", "NO",
+     ["Acompañar los requisitos del art. 86 y poner los bienes a disposición del juzgado",
+      "Persona jurídica: acreditar la decisión del órgano correspondiente",
+      "Solo puede desistir si demuestra, antes de la primera publicación de edictos, que desapareció la "
+      "cesación de pagos (art. 87)"],
+     ["Escrito de quiebra propia", "Documentación del art. 86"]),
+    ("CYQ_720", "Quiebra", "Sentencia de quiebra", "TRIBUNAL",
+     "Pedido de quiebra admitido, quiebra propia, o quiebra indirecta por fracaso o incumplimiento del concurso",
+     0, "SIN_PLAZO", "NO", "Arts. 77, 88 y 202 LCQ", "NO", "NO",
+     ["Revisar el contenido del art. 88: inhibición, entrega de bienes, prohibición de pagos, intercepción de "
+      "correspondencia, realización de bienes e inventario",
+      "Cargar en la app la fecha de verificación y las de los informes que fija la sentencia",
+      "En la quiebra indirecta, los créditos ya verificados se recalculan (art. 202)"],
+     ["Sentencia de quiebra"]),
+    ("CYQ_725", "Efectos de la quiebra", "Entrega de libros y constitución de domicilio por el fallido", "ACTORA",
+     "Notificación de la sentencia de quiebra", 24, "HORAS", "NO", "Art. 88 incs. 4 y 7 LCQ", "NO", "NO",
+     ["Entregar al síndico los libros y la documentación contable dentro de las 24 horas (inc. 4)",
+      "Constituir domicilio procesal dentro de las 48 horas, bajo apercibimiento de tenerlo en los estrados "
+      "(inc. 7)",
+      "Cumplir los requisitos del art. 86 si no se cumplieron"],
+     ["Constancia de entrega de libros", "Escrito de constitución de domicilio"]),
+    ("CYQ_730", "Efectos de la quiebra", "Publicación de edictos de la quiebra", "TRIBUNAL",
+     "Sentencia de quiebra", 24, "HORAS", "NO", "Art. 89 LCQ", "NO", "NO",
+     ["El secretario dispone la publicación dentro de las 24 horas, por 5 días y sin previo pago",
+      "Desde la última publicación corren la conversión (10 días) y, en su caso, la reposición"],
+     ["Edictos publicados"]),
+    ("CYQ_735", "Efectos de la quiebra", "Reposición o levantamiento sin trámite de la quiebra", "ACTORA",
+     "Conocimiento de la sentencia de quiebra (o última publicación de edictos)", 5, "HABILES_JUDICIALES", "SI",
+     "Arts. 94 a 98 LCQ", "NO", "NO",
+     ["Solo en la quiebra pedida por un acreedor (art. 94)",
+      "Plazo: 5 días desde que se conoció la sentencia (clausura o incautación) o hasta el quinto día de la última "
+      "publicación (duda D19)",
+      "Levantamiento sin trámite: depositar en pago o a embargo los créditos invocados y los de otros pedidos en "
+      "trámite (art. 96)"],
+     ["Escrito de reposición", "Comprobante del depósito"]),
+    ("CYQ_740", "Efectos de la quiebra", "Conversión de la quiebra en concurso preventivo", "ACTORA",
+     "Última publicación de edictos de la quiebra", 10, "HABILES_JUDICIALES", "SI", "Arts. 90 a 93 LCQ",
+     "NO", "NO",
+     ["Solo el deudor en las condiciones del art. 5 y los socios del art. 160",
+      "No pueden pedirla los quebrados por incumplimiento del acuerdo, en trámite de concurso o en la inhibición "
+      "del art. 59",
+      "Acompañar los requisitos del art. 11 (a verificar el plazo del art. 93)"],
+     ["Pedido de conversión"]),
+    ("CYQ_745", "Efectos de la quiebra", "Incautación, inventario y desapoderamiento", "TRIBUNAL",
+     "Sentencia de quiebra", 30, "HABILES_JUDICIALES", "NO", "Arts. 88 inc. 10, 106 a 109 y 177 a 182 LCQ",
+     "NO", "NO",
+     ["El funcionario designado hace el inventario en 30 días (art. 88 inc. 10)",
+      "El fallido pierde la administración y disposición de sus bienes (art. 107), salvo los excluidos (art. 108)",
+      "El síndico incauta los bienes y cobra los créditos del fallido (arts. 177 y 182)"],
+     ["Inventario", "Actas de incautación"]),
+    ("CYQ_750", "Efectos de la quiebra", "Inhabilitación del fallido", "TRIBUNAL",
+     "Sentencia de quiebra (o fecha de cesación de pagos fijada, art. 235)", 1, "ANIOS", "NO",
+     "Arts. 234 a 238 LCQ", "NO", "NO",
+     ["Alcanza al fallido y a los administradores de la persona jurídica",
+      "Cesa de pleno derecho al año; el juez puede reducirla, y se prorroga si hay proceso penal (art. 236)",
+      "Pedir la rehabilitación y su comunicación a los registros"],
+     ["Constancia de rehabilitación"]),
+    ("CYQ_755", "Efectos de la quiebra", "Continuación de la explotación y cooperativa de trabajo", "TRIBUNAL",
+     "Aceptación del cargo del síndico", 20, "CORRIDOS", "NO", "Arts. 189 a 191 LCQ", "NO", "NO",
+     ["El síndico informa dentro de los 20 días corridos sobre la posibilidad de continuar la explotación",
+      "Los trabajadores que representen dos tercios del personal pueden pedirla como cooperativa de trabajo y "
+      "presentar un proyecto en 20 días",
+      "Controlar la resolución del juez y su plazo (art. 191)"],
+     ["Informe del síndico", "Proyecto de explotación"]),
+]
+
+ACCIONES = [
+    ("CYQ_760", "Acciones de la quiebra", "Observación de la fecha de cesación de pagos", "AMBAS",
+     "Presentación del informe general en la quiebra", 30, "HABILES_JUDICIALES", "SI", "Arts. 115 a 117 LCQ",
+     "NO", "NO",
+     ["La fecha fija el período de sospecha, que retrotrae como máximo 2 años desde la sentencia (art. 116)",
+      "Presentar los escritos por triplicado; el juez puede ordenar prueba",
+      "La resolución es apelable por quienes intervinieron y por el fallido"],
+     ["Escrito de observación"]),
+    ("CYQ_765", "Acciones de la quiebra", "Ineficacia de actos y acción revocatoria concursal", "TRIBUNAL",
+     "Sentencia de quiebra", 3, "ANIOS", "NO", "Arts. 118 a 124 LCQ", "NO", "NO",
+     ["Actos ineficaces de pleno derecho del período de sospecha (art. 118)",
+      "Actos perjudiciales con conocimiento de la cesación de pagos: acción del síndico con autorización de los "
+      "acreedores (art. 119)",
+      "Un acreedor puede promoverla si el síndico no lo hace dentro de los 30 días de intimado (art. 120)",
+      "La acción caduca a los 3 años de la sentencia de quiebra (art. 124)"],
+     ["Demanda de ineficacia", "Autorización de los acreedores"]),
+    ("CYQ_770", "Acciones de la quiebra", "Pedido de extensión de la quiebra", "AMBAS",
+     "Presentación del informe general", 6, "MESES", "NO", "Arts. 160 a 165 LCQ", "NO", "NO",
+     ["Lo piden el síndico o cualquier acreedor (art. 163)",
+      "Caducidad de 6 meses desde el informe general, con los supuestos de extensión del art. 163",
+      "Supuestos: actuación en interés personal, control abusivo o confusión patrimonial (art. 161)"],
+     ["Escrito de extensión"]),
+    ("CYQ_775", "Acciones de la quiebra", "Acción de responsabilidad de administradores y terceros", "TRIBUNAL",
+     "Sentencia de quiebra", 2, "ANIOS", "NO", "Arts. 173 a 176 LCQ; art. 278 LGS", "NO", "NO",
+     ["La deduce el síndico, con la autorización previa del art. 119",
+      "Tramita por juicio ordinario y la instancia perime a los 6 meses (art. 174)",
+      "Prescribe a los 2 años de la sentencia de quiebra"],
+     ["Demanda de responsabilidad"]),
+]
+
+LIQUIDACION = [
+    ("CYQ_800", "Liquidación", "Realización de los bienes", "TRIBUNAL",
+     "Sentencia de quiebra (o fecha en que quedó firme, si hubo reposición)", 4, "MESES", "NO",
+     "Arts. 203 a 217 LCQ", "NO", "NO",
+     ["Orden de preferencia: empresa en marcha, conjunto de bienes y venta singular (arts. 204 y 205)",
+      "La subasta se hace sin base; edictos de 2 a 5 días para muebles y de 5 a 10 para inmuebles (art. 208)",
+      "Venta directa o licitación cuando corresponda (arts. 212 y 213)",
+      "El juez puede ampliar el plazo 90 días; vencido, se remueve al síndico y al enajenador (art. 217)",
+      "Acreedor con garantía real: concurso especial (art. 209)"],
+     ["Resolución que ordena la realización"]),
+    ("CYQ_805", "Liquidación", "Subasta de bienes del fallido", "TRIBUNAL",
+     "Fecha y hora fijadas en los edictos", 0, "FECHA_FIJADA", "NO", "Arts. 208, 211 y 212 LCQ (a verificar el "
+     "reglamento de subastas electrónicas de la SCBA)", "NO", "NO",
+     ["Cargar la fecha de la subasta",
+      "Controlar las ofertas bajo sobre y su apertura (art. 212)",
+      "Controlar la rendición de cuentas del enajenador"],
+     ["Acta de subasta"]),
+    ("CYQ_810", "Liquidación", "Informe final y proyecto de distribución", "TRIBUNAL",
+     "Aprobación de la última enajenación", 10, "HABILES_JUDICIALES", "NO", "Art. 218 LCQ", "NO", "NO",
+     ["El síndico presenta la rendición de cuentas, el resultado de la realización y el proyecto de distribución",
+      "El juez regula los honorarios (arts. 265 a 272)",
+      "Se publican edictos por 2 días"],
+     ["Informe final", "Edictos publicados"]),
+    ("CYQ_815", "Liquidación", "Observaciones al informe final", "AMBAS",
+     "Última publicación de edictos del informe final", 10, "HABILES_JUDICIALES", "SI", "Art. 218 LCQ",
+     "NO", "NO",
+     ["Las formulan el fallido y los acreedores, con tres ejemplares",
+      "Solo por omisiones, errores o falsedades del informe",
+      "El juez resuelve dentro de los 10 días de firmes las regulaciones de honorarios"],
+     ["Escrito de observaciones"]),
+    ("CYQ_820", "Liquidación", "Distribución y pago de dividendos", "TRIBUNAL",
+     "Aprobación del proyecto de distribución", 0, "SIN_PLAZO", "NO", "Arts. 221 a 223 LCQ", "NO", "NO",
+     ["Pedir el pago del dividendo por transferencia",
+      "Hay distribuciones complementarias si ingresan fondos (art. 222)"],
+     ["Orden de pago"]),
+    ("CYQ_825", "Liquidación", "Cobro del dividendo concursal", "DEMANDADA",
+     "Aprobación del proyecto de distribución", 1, "ANIOS", "NO", "Art. 224 LCQ", "NO", "NO",
+     ["El derecho a cobrar caduca de pleno derecho al año",
+      "Lo no cobrado se destina a la educación común"],
+     ["Comprobante de cobro"]),
+]
+
+CONCLUSION = [
+    ("CYQ_830", "Conclusión", "Clausura por distribución final", "TRIBUNAL",
+     "Pago de la distribución final", 0, "SIN_PLAZO", "NO", "Arts. 230 y 231 LCQ", "NO", "NO",
+     ["El procedimiento puede reabrirse si aparecen bienes (art. 231)",
+      "Los acreedores no presentados solo pueden verificar si denuncian bienes nuevos"],
+     ["Resolución de clausura"]),
+    ("CYQ_835", "Conclusión", "Conclusión de la quiebra después de la clausura", "TRIBUNAL",
+     "Resolución que dispone la clausura del procedimiento", 2, "ANIOS", "NO", "Art. 231 LCQ", "NO", "NO",
+     ["Pasados 2 años sin reapertura, el juez puede disponer la conclusión",
+      "Controlar el levantamiento de la inhibición y la comunicación a los registros"],
+     ["Resolución de conclusión"]),
+    ("CYQ_840", "Conclusión", "Clausura por falta de activo", "TRIBUNAL",
+     "Bienes insuficientes para cubrir los gastos del juicio", 0, "SIN_PLAZO", "NO", "Arts. 232 y 233 LCQ",
+     "NO", "NO",
+     ["La clausura por falta de activo hace presumir el fraude y se comunica a la justicia penal (art. 233, a "
+      "verificar)",
+      "Si aparecen bienes, se reabre el procedimiento"],
+     ["Resolución de clausura"]),
+    ("CYQ_850", "Conclusión", "Avenimiento, pago total o carta de pago", "ACTORA",
+     "Conformidad de todos los acreedores verificados, pago total o carta de pago", 0, "SIN_PLAZO", "NO",
+     "Arts. 225 a 229 LCQ", "NO", "NO",
+     ["Avenimiento: conformidad unánime de los acreedores verificados y garantía de los gastos (art. 225)",
+      "Pago total: depósito de los créditos, intereses y gastos (art. 228)",
+      "Carta de pago de todos los acreedores verificados (art. 229)",
+      "Pedir la conclusión y el levantamiento de la inhabilitación y la inhibición"],
+     ["Conformidades o cartas de pago", "Comprobantes de depósito"]),
+]
+
+CIERRE = [
+    ("CYQ_900", "Cierre", "Regulación de honorarios del concurso o la quiebra", "TRIBUNAL",
+     "Homologación, informe final, clausura o conclusión (art. 265)", 0, "SIN_PLAZO", "NO",
+     "Arts. 265 a 271 LCQ", "NO", "NO",
+     ["En el acuerdo: entre 1% y 4% del activo prudencialmente estimado, con el límite del 4% del pasivo y el "
+      "mínimo de dos sueldos de secretario (art. 266)",
+      "En la quiebra liquidada: entre 4% y 12% del activo realizado (art. 267)",
+      "No se aplican las leyes arancelarias locales (art. 271), salvo en los incidentes (art. 287; duda D16)"],
+     ["Auto regulatorio"]),
+    ("CYQ_905", "Cierre", "Apelación de honorarios", "AMBAS",
+     "Notificación de la regulación de honorarios", 5, "HABILES_JUDICIALES", "SI",
+     "Arts. 272 y 273 incs. 1 y 4 LCQ", "NO", "NO",
+     ["Apelan el titular de cada regulación y el síndico; en algunos supuestos también el deudor",
+      "Si nadie apela, el juez igual eleva los autos a la Cámara en los casos del art. 272",
+      "Se concede en relación y con efecto suspensivo"],
+     ["Escrito de apelación"]),
+    ("CYQ_910", "Cierre", "Pago de aportes de la Ley 6716", "AMBAS",
+     "Regulación de honorarios firme", 60, "CORRIDOS", "NO",
+     "Art. 14 Ley 6716 (a verificar su aplicación a los honorarios concursales)", "NO", "NO",
+     ["Cada letrado liquida y paga sus aportes a la Caja de Abogados",
+      "Acreditar el pago en el expediente"],
+     ["Boleta de aportes pagada"]),
+    ("CYQ_990", "Cierre", "Archivo del expediente", "TRIBUNAL",
+     "Conclusión del concurso o de la quiebra, o desistimiento", 0, "SIN_PLAZO", "NO",
+     "Reglamento de archivo de la SCBA (a verificar)", "NO", "SI",
+     ["Verificar el levantamiento de la inhibición general y la comunicación a los registros",
+      "Retirar la documentación original"],
+     ["Constancia de archivo"]),
+]
+
+NODOS = (PREVIA + APERTURA + VERIFICACION + INFORME_GENERAL + EXCLUSIVIDAD + HOMOLOGACION + CRAMDOWN + APE
+         + QUIEBRA + ACCIONES + LIQUIDACION + CONCLUSION + CIERRE)
+
+TRANSICIONES = [
+    ("CYQ_010", "Deudor: negociar un acuerdo extrajudicial", "CYQ_030"),
+    ("CYQ_010", "Deudor: pedir el concurso preventivo", "CYQ_020"),
+    ("CYQ_010", "Deudor: pedir su propia quiebra", "CYQ_710"),
+    ("CYQ_010", "Acreedor: pedir la quiebra del deudor", "CYQ_700"),
+    ("CYQ_010", "Acreedor: el deudor ya está en concurso o en quiebra", "CYQ_200"),
+    ("CYQ_020", "Presentación lista", "CYQ_100"),
+    ("CYQ_030", "Mayorías obtenidas", "CYQ_600"),
+    ("CYQ_030", "No se obtienen las mayorías", "CYQ_020"),
+
+    ("CYQ_100", "Presentación realizada", "CYQ_105"),
+    ("CYQ_100", "Presentación realizada", "CYQ_120"),
+    ("CYQ_100", "Presentación realizada", "CYQ_250"),
+    ("CYQ_100", "Faltan requisitos y el juez concede plazo", "CYQ_110"),
+    ("CYQ_105", "Ratificación acreditada o persona humana", ""),
+    ("CYQ_105", "No se acredita: cese del procedimiento", "CYQ_990"),
+    ("CYQ_110", "Requisitos completados o plazo vencido", "CYQ_120"),
+    ("CYQ_120", "Concurso abierto", "CYQ_130"),
+    ("CYQ_120", "Concurso abierto", "CYQ_140"),
+    ("CYQ_120", "Concurso abierto", "CYQ_150"),
+    ("CYQ_120", "Concurso abierto", "CYQ_160"),
+    ("CYQ_120", "Concurso abierto", "CYQ_165"),
+    ("CYQ_120", "Concurso abierto", "CYQ_200"),
+    ("CYQ_120", "Apertura rechazada", "CYQ_125"),
+    ("CYQ_125", "La Cámara revoca y ordena la apertura", "CYQ_120"),
+    ("CYQ_125", "Rechazo firme", "CYQ_990"),
+    ("CYQ_130", "Edictos publicados y acreditados", ""),
+    ("CYQ_130", "No se publican en término: desistimiento", "CYQ_990"),
+    ("CYQ_140", "Libros presentados y gastos depositados", ""),
+    ("CYQ_140", "No se deposita en término: desistimiento", "CYQ_990"),
+    ("CYQ_150", "Cartas enviadas", "CYQ_155"),
+    ("CYQ_155", "Informe presentado y pronto pago resuelto", ""),
+    ("CYQ_160", "Juicios suspendidos o radicados", ""),
+    ("CYQ_165", "Autorización resuelta o plazo vencido", ""),
+
+    ("CYQ_200", "Vencido el plazo de verificación", "CYQ_210"),
+    ("CYQ_210", "Vencido el período de observación", "CYQ_220"),
+    ("CYQ_220", "Informe individual presentado", "CYQ_230"),
+    ("CYQ_230", "Resolución dictada en el concurso preventivo", "CYQ_240"),
+    ("CYQ_230", "Resolución dictada en el concurso preventivo", "CYQ_300"),
+    ("CYQ_230", "Resolución dictada en el concurso preventivo", "CYQ_310"),
+    ("CYQ_230", "Resolución dictada en la quiebra", "CYQ_240"),
+    ("CYQ_230", "Resolución dictada en la quiebra", "CYQ_310"),
+    ("CYQ_240", "Revisión resuelta o no deducida", ""),
+    ("CYQ_250", "Pedido tardío presentado o plazo vencido", ""),
+
+    ("CYQ_300", "Propuesta de categorización presentada", ""),
+    ("CYQ_310", "Informe presentado en el concurso preventivo", "CYQ_320"),
+    ("CYQ_310", "Informe presentado en la quiebra", "CYQ_320"),
+    ("CYQ_310", "Informe presentado en la quiebra", "CYQ_760"),
+    ("CYQ_310", "Informe presentado en la quiebra", "CYQ_765"),
+    ("CYQ_310", "Informe presentado en la quiebra", "CYQ_770"),
+    ("CYQ_310", "Informe presentado en la quiebra", "CYQ_775"),
+    ("CYQ_320", "Vencido el plazo en el concurso preventivo", "CYQ_330"),
+    ("CYQ_320", "Vencido el plazo en la quiebra", ""),
+    ("CYQ_330", "Resolución de categorización notificada", "CYQ_400"),
+    ("CYQ_330", "Resolución de categorización notificada", "CYQ_410"),
+    ("CYQ_330", "Resolución de categorización notificada", "CYQ_420"),
+
+    ("CYQ_400", "Conformidades acreditadas en término", "CYQ_440"),
+    ("CYQ_400", "Sin conformidades, sociedad comprendida en el art. 48", "CYQ_500"),
+    ("CYQ_400", "Sin conformidades, otros deudores o pequeño concurso", "CYQ_720"),
+    ("CYQ_410", "Propuesta presentada", ""),
+    ("CYQ_420", "Audiencia celebrada", ""),
+    ("CYQ_440", "Acuerdo declarado existente", "CYQ_450"),
+    ("CYQ_450", "Sin impugnaciones o impugnaciones rechazadas", "CYQ_460"),
+    ("CYQ_450", "Impugnación admitida, sociedad comprendida en el art. 48", "CYQ_500"),
+    ("CYQ_450", "Impugnación admitida, otros deudores", "CYQ_720"),
+
+    ("CYQ_460", "Acuerdo homologado", "CYQ_475"),
+    ("CYQ_460", "Acuerdo homologado", "CYQ_480"),
+    ("CYQ_460", "Acuerdo homologado", "CYQ_485"),
+    ("CYQ_460", "Acuerdo homologado", "CYQ_900"),
+    ("CYQ_460", "Homologación rechazada, sociedad comprendida en el art. 48", "CYQ_500"),
+    ("CYQ_460", "Homologación rechazada, otros deudores", "CYQ_720"),
+    ("CYQ_475", "Honorarios pagados", ""),
+    ("CYQ_475", "Falta de pago: se pide la quiebra", "CYQ_720"),
+    ("CYQ_480", "Acuerdo cumplido y declarado", "CYQ_990"),
+    ("CYQ_480", "Obligación del acuerdo impaga", "CYQ_490"),
+    ("CYQ_485", "Plazo vencido sin pedido o nulidad rechazada", ""),
+    ("CYQ_485", "Nulidad declarada", "CYQ_720"),
+    ("CYQ_490", "Quiebra declarada por incumplimiento", "CYQ_720"),
+    ("CYQ_490", "Pedido rechazado o incumplimiento subsanado", "CYQ_480"),
+
+    ("CYQ_500", "Hay inscriptos", "CYQ_510"),
+    ("CYQ_500", "Sin inscriptos", "CYQ_720"),
+    ("CYQ_510", "Valor fijado por el juez", "CYQ_520"),
+    ("CYQ_520", "El deudor o un inscripto acredita las conformidades", "CYQ_440"),
+    ("CYQ_520", "Nadie obtiene las conformidades", "CYQ_720"),
+
+    ("CYQ_600", "Edictos publicados", "CYQ_620"),
+    ("CYQ_620", "Sin oposiciones o resueltas", "CYQ_630"),
+    ("CYQ_630", "APE homologado", "CYQ_900"),
+    ("CYQ_630", "Homologación rechazada", "CYQ_010"),
+
+    ("CYQ_700", "Pedido admitido formalmente", "CYQ_705"),
+    ("CYQ_705", "Quiebra declarada", "CYQ_720"),
+    ("CYQ_705", "Pedido rechazado o desistido", "CYQ_990"),
+    ("CYQ_710", "Pedido presentado", "CYQ_720"),
+    ("CYQ_720", "Quiebra declarada", "CYQ_200"),
+    ("CYQ_720", "Quiebra declarada", "CYQ_725"),
+    ("CYQ_720", "Quiebra declarada", "CYQ_730"),
+    ("CYQ_720", "Quiebra declarada", "CYQ_745"),
+    ("CYQ_720", "Quiebra declarada", "CYQ_750"),
+    ("CYQ_725", "Libros entregados y domicilio constituido", ""),
+    ("CYQ_730", "Edictos publicados", "CYQ_735"),
+    ("CYQ_730", "Edictos publicados", "CYQ_740"),
+    ("CYQ_735", "Quiebra revocada o levantada", "CYQ_990"),
+    ("CYQ_735", "Recurso rechazado, no interpuesto o no procede", ""),
+    ("CYQ_740", "Conversión admitida", "CYQ_120"),
+    ("CYQ_740", "No se pide o se rechaza", ""),
+    ("CYQ_745", "Inventario presentado y bienes incautados", "CYQ_755"),
+    ("CYQ_745", "Inventario presentado y bienes incautados", "CYQ_800"),
+    ("CYQ_750", "Inhabilitación cesada o prorrogada", ""),
+    ("CYQ_755", "Continuación resuelta o descartada", ""),
+
+    ("CYQ_760", "Fecha de cesación de pagos fijada", ""),
+    ("CYQ_765", "Acción resuelta o caducada", ""),
+    ("CYQ_770", "Pedido resuelto o plazo vencido", ""),
+    ("CYQ_775", "Acción resuelta o prescripta", ""),
+
+    ("CYQ_800", "Subasta ordenada", "CYQ_805"),
+    ("CYQ_800", "Enajenación por otra vía aprobada (empresa en marcha, venta directa o licitación)", "CYQ_810"),
+    ("CYQ_800", "Activo insuficiente para los gastos", "CYQ_840"),
+    ("CYQ_800", "Avenimiento, pago total o carta de pago", "CYQ_850"),
+    ("CYQ_805", "Última enajenación aprobada", "CYQ_810"),
+    ("CYQ_805", "Quedan bienes por vender o subasta fracasada", "CYQ_800"),
+    ("CYQ_810", "Informe presentado y edictos publicados", "CYQ_815"),
+    ("CYQ_810", "Informe presentado y edictos publicados", "CYQ_900"),
+    ("CYQ_815", "Proyecto de distribución aprobado", "CYQ_820"),
+    ("CYQ_820", "Dividendos puestos a disposición", "CYQ_825"),
+    ("CYQ_820", "Dividendos puestos a disposición", "CYQ_830"),
+    ("CYQ_825", "Dividendo cobrado o caducado", ""),
+    ("CYQ_830", "Clausura dispuesta", "CYQ_835"),
+    ("CYQ_835", "Pasaron 2 años sin reapertura", "CYQ_990"),
+    ("CYQ_835", "Reapertura por bienes nuevos", "CYQ_800"),
+    ("CYQ_840", "Clausura firme", "CYQ_990"),
+    ("CYQ_840", "Reapertura por bienes nuevos", "CYQ_800"),
+    ("CYQ_850", "Conclusión declarada", "CYQ_900"),
+
+    ("CYQ_900", "Regulación notificada", "CYQ_905"),
+    ("CYQ_905", "Regulación firme", "CYQ_910"),
+    ("CYQ_910", "Aportes pagados y acreditados", "CYQ_990"),
+]
+
+DUDAS = [
+    ("D01", "Régimen y vigencia",
+     "¿Sigue vigente al 13/11/2026 la Ley 24.522 con las últimas reformas encontradas (Ley 27.170 de 2015 y "
+     "Decreto 62/2019, que agregó el inc. 4 del art. 21)? ¿Hay alguna reforma de 2025 o 2026 en trámite o sancionada? "
+     "El CPCCBA rige de forma supletoria (art. 278 LCQ); su última reforma encontrada es la Ley 15.513 (BO "
+     "03/01/2025). Propuesta: la matriz se arma sobre el texto actualizado de InfoLEG. Fuentes: InfoLEG (Ley "
+     "24.522, texto actualizado) y normas.gba.gob.ar.", "Todos"),
+    ("D02", "Citas normativas",
+     "Validar artículo por artículo las citas de la LCQ, del CPCCBA, de la LGS y de las Leyes 6716, 8480 y 14.967. "
+     "Las marcadas '(a verificar)' no se pudieron confirmar en el texto oficial.", "Todos"),
+    ("D03", "Producto: cronograma fijado por el juez",
+     "El auto de apertura (art. 14 incs. 3, 9 y 10) y la sentencia de quiebra (art. 88) fijan de una vez las fechas "
+     "de verificación, de los informes y de la audiencia informativa. Con la app actual, cada fecha se carga cuando "
+     "se abre su hito (CYQ_200, CYQ_220, CYQ_310, CYQ_400, CYQ_420), semanas o meses después. ¿Se necesita cargar "
+     "todo el cronograma al registrar el auto de apertura? Propuesta para la V1: el checklist de CYQ_120 y CYQ_720 "
+     "pide anotarlas; evaluar para la V2 una carga conjunta.",
+     "CYQ_120, CYQ_200, CYQ_220, CYQ_310, CYQ_400, CYQ_420, CYQ_720"),
+    ("D04", "Cómputo de los plazos de la LCQ",
+     "El art. 273 inc. 2 dice que los plazos se cuentan en días hábiles judiciales salvo disposición en contrario. "
+     "¿Hay plazos de la ley que sean corridos además del art. 190 (20 días corridos)? ¿Los de meses y años "
+     "(2 años de la verificación tardía, 6 meses de la nulidad y de la extensión, 3 años de la ineficacia) se "
+     "cuentan por calendario? Propuesta: así están cargados.", "CYQ_250, CYQ_485, CYQ_755, CYQ_765, CYQ_770"),
+    ("D05", "Notificación por ministerio de la ley",
+     "Muchos plazos corren desde la notificación por ministerio de la ley (arts. 26 y 273 inc. 5): edictos, libros, "
+     "exclusividad, impugnación. ¿El Día Cero es el martes o viernes siguiente al dictado de la resolución "
+     "(art. 133 CPCCBA, a verificar)? ¿Cómo lo carga el abogado: como fecha del disparador? Propuesta: el abogado "
+     "carga como disparador el día de nota siguiente.", "CYQ_130, CYQ_140, CYQ_330, CYQ_450"),
+    ("D06", "Plazo de gracia",
+     "La matriz aplica la gracia del art. 124 CPCCBA (por el art. 278 LCQ) solo a las presentaciones de parte en "
+     "días hábiles judiciales, y no a los plazos de los órganos del concurso ni a los de meses y años. ¿Es correcto "
+     "en el concurso, donde los plazos son perentorios (art. 273 inc. 1)? Vale también para ejecutivos y "
+     "societarios.", "Todos"),
+    ("D07", "Arancel de verificación",
+     "El art. 32 (texto Ley 27.170) fija un arancel del 10% del SMVM por pedido, que se suma al crédito. ¿Qué "
+     "exenciones rigen hoy (créditos laborales y créditos chicos, a verificar)? ¿Lo paga también el tardío y el "
+     "incidental? El texto dice que sí.", "CYQ_200, CYQ_250"),
+    ("D08", "Pronto pago laboral",
+     "¿Conviene un hito propio para el pedido de pronto pago del trabajador (art. 16), con su plazo, o alcanza con "
+     "el checklist del informe del art. 14 inc. 11? Propuesta: checklist en la V1.", "CYQ_155"),
+    ("D09", "Fuero de atracción y juicios del estudio",
+     "Si el estudio lleva un juicio contra quien se concursa, ¿se modela la radicación en el concurso como "
+     "derivación desde la matriz de ejecutivos o de societarios (hitos 'Sigue en la matriz de concursos')? Los "
+     "juicios excluidos del art. 21 (garantías reales, conocimiento en trámite, laborales) siguen en su tribunal y "
+     "verifican con la sentencia. Propuesta: derivación en la matriz de origen y checklist acá.", "CYQ_160, CYQ_250"),
+    ("D10", "Período de exclusividad y propuesta",
+     "El art. 43 pide hacer pública la propuesta 20 días antes del vencimiento. ¿Son 20 días hábiles judiciales "
+     "(art. 273 inc. 2)? Se cargó como anticipación en días hábiles judiciales. ¿Quién fija la fecha de vencimiento "
+     "de la exclusividad: el juez en el auto de categorización o el abogado calculando 90 días? Propuesta: fecha "
+     "fijada.", "CYQ_400, CYQ_410"),
+    ("D11", "Homologación sin plazo",
+     "La LCQ no fija plazo para homologar (art. 52). ¿Corresponde SIN_PLAZO o el plazo general de 5 días del art. "
+     "273 inc. 1? Propuesta: SIN_PLAZO, porque el plazo del art. 273 inc. 1 es para las partes.", "CYQ_460"),
+    ("D12", "Salvataje (art. 48)",
+     "¿Desde qué hecho corren los 20 días para obtener conformidades (art. 48 inc. 4): la resolución que fija el "
+     "valor o su notificación? ¿Cómo se modela la competencia entre el deudor y los inscriptos (el primero que "
+     "acredita gana)? Propuesta: un solo hito con el plazo más temprano y el detalle en el checklist.",
+     "CYQ_500, CYQ_510, CYQ_520"),
+    ("D13", "Pequeños concursos y persona humana",
+     "¿Conviene un flujo aparte para los pequeños concursos (arts. 288 y 289: sin comité ni art. 48) y para la "
+     "persona humana que no realiza actividad empresarial? Propuesta: el mismo flujo, con el checklist de CYQ_010 y "
+     "las salidas que excluyen el art. 48.", "CYQ_010, CYQ_400, CYQ_500"),
+    ("D14", "APE",
+     "¿Desde cuándo se suspenden las acciones en el APE (art. 72, a verificar: orden de publicar edictos)? ¿El "
+     "incumplimiento del APE homologado lleva a la quiebra igual que en el concurso (art. 76 remite a las reglas de "
+     "nulidad e incumplimiento)? Falta un hito de cumplimiento: ¿se agrega?", "CYQ_600, CYQ_620, CYQ_630"),
+    ("D15", "Tasa de justicia en concursos y quiebras",
+     "¿Cuándo y sobre qué base se paga la tasa en el concurso preventivo (¿al homologar, sobre el monto del "
+     "acuerdo?), en el APE y en la quiebra (¿al distribuir?), según el Código Fiscal y la Ley Impositiva 2026 "
+     "(Ley 15.558)? ¿El acreedor que pide la quiebra paga tasa? ¿La contribución del art. 12 inc. g Ley 6716 es del "
+     "5% de la tasa, como dice el texto vigente? Transversal: en ejecutivos y societarios se paga al iniciar.",
+     "CYQ_020, CYQ_100, CYQ_700"),
+    ("D16", "Honorarios, aportes y bono",
+     "En el concurso rigen los arts. 265 a 272 LCQ y no las leyes arancelarias locales (art. 271), salvo en los "
+     "incidentes (art. 287, Ley 14.967). ¿Se pagan aportes de la Ley 6716 (art. 14: 60 días corridos de firme) sobre "
+     "los honorarios concursales? ¿El bono de la Ley 8480 se paga por cada incidente? En ejecutivos y societarios: "
+     "apelación en 5 días fundada (art. 57 Ley 14.967) y aportes en 60 días corridos (art. 14 Ley 6716).",
+     "CYQ_900, CYQ_905, CYQ_910"),
+    ("D17", "Pedido de quiebra: defensa del deudor",
+     "¿El depósito en pago o a embargo del crédito del peticionante dentro del quinto día (art. 84) evita la "
+     "quiebra según la práctica de los juzgados de PBA? ¿Conviene un hito propio para las medidas precautorias del "
+     "art. 85?", "CYQ_700, CYQ_705"),
+    ("D18", "Entrega de libros y edictos",
+     "Los plazos de 24 y 48 horas del art. 88 y las 24 horas del art. 89 se cargaron como HORAS. ¿Corren desde la "
+     "notificación o desde la sentencia? ¿Cuentan las horas inhábiles? Propuesta: desde la notificación, en horas "
+     "corridas.", "CYQ_725, CYQ_730"),
+    ("D19", "Reposición de la quiebra",
+     "El art. 94 da 5 días desde que el fallido conoció la sentencia o, si no la conoció antes, hasta el quinto día "
+     "de la última publicación. Son dos disparadores. Propuesta (la más temprana): desde el conocimiento, que el "
+     "abogado carga como fecha del disparador.", "CYQ_735"),
+    ("D20", "Realización de bienes",
+     "El plazo de 4 meses del art. 217 corre desde la quiebra o desde que quedó firme si hubo reposición. ¿Se edita "
+     "el disparador cuando hay reposición? ¿Se usa la subasta electrónica de la SCBA en la quiebra o rige solo el "
+     "art. 208 LCQ?", "CYQ_800, CYQ_805"),
+    ("D21", "Distribución y conclusión",
+     "¿La conclusión a los 2 años (art. 231) se aplica también a la clausura por falta de activo (art. 232)? La "
+     "matriz la aplica solo a la distribución final. ¿Desde qué fecha corre la caducidad del dividendo (art. 224): "
+     "aprobación del proyecto o puesta a disposición?", "CYQ_825, CYQ_835, CYQ_840"),
+    ("D22", "Ferias judiciales",
+     "La SCBA fija por acordada la feria de enero y la de invierno. Propuesta: los plazos en días hábiles judiciales "
+     "se congelan; los corridos, las horas y los plazos de meses y años no se suspenden. ¿Hay habilitación de feria "
+     "automática en los concursos? Las reglas del motor se validan en las dudas D26 a D34 de la matriz laboral "
+     "general y valen también para las tres matrices comerciales.", "Todos"),
+    ("D23", "Notificaciones electrónicas",
+     "Según el reglamento de la SCBA (Acuerdo 4013, texto ordenado por el Acuerdo 4039, art. 13), la notificación "
+     "electrónica se perfecciona el martes o viernes siguiente a quedar disponible. ¿Qué notificaciones del "
+     "concurso siguen siendo por cédula papel (art. 273 inc. 5: citación a las partes) o por carta del síndico "
+     "(art. 29)?", "CYQ_150, CYQ_705"),
+    ("D24", "Tasa de interés",
+     "En las liquidaciones se usa la tasa de la sentencia o, en su defecto, la doctrina legal de la SCBA (tasa "
+     "pasiva digital del Banco Provincia a 30 días; interés puro sobre valores actualizados según 'Vera' y "
+     "'Nidera'; actualización del crédito según 'Barrios'; números de causa a verificar). Desde la Res. BCRA "
+     "1/2026 (BO 09/01/2026) existe la tasa de intereses moratorios del art. 768 inc. c CCyC y algunas Cámaras la "
+     "aplican. ¿Qué tasa se carga por defecto en el checklist? En el concurso, los intereses quirografarios se "
+     "suspenden desde la presentación (art. 19).", "CYQ_100, CYQ_200"),
+    ("D25", "Producto: roles del concurso",
+     "El enum Rol_Responsable se usó así: ACTORA = deudor; DEMANDADA = acreedores; TRIBUNAL = juzgado, síndico, "
+     "comité de control, evaluador y enajenador; AMBAS = cualquier interesado. El síndico actúa mucho y queda "
+     "mezclado con el juzgado. ¿Hacen falta roles propios (SINDICO, ACREEDOR, INTERVENTOR, ORGANISMO) para las "
+     "tres matrices comerciales? Propuesta para la V1: mantener el enum y aclarar en el nombre del hito. Solo se "
+     "registra; no se modifica el contrato de API.", "Todos"),
+    ("D26", "Producto: el estudio representa a un acreedor",
+     "legal_cases.represented_role solo admite ACTORA o DEMANDADA. Si el estudio representa a un acreedor "
+     "(verificación, impugnación, pedido de quiebra), ¿se elige DEMANDADA? Con eso los hitos del deudor quedan "
+     "como 'de la otra parte' y los del acreedor como propios, que es lo correcto; pero en el pedido de quiebra el "
+     "acreedor es quien promueve. ¿Se acepta para la V1? Solo se registra.",
+     "CYQ_010, CYQ_200, CYQ_450, CYQ_700"),
+    ("D27", "Producto: incidentes como expedientes vinculados",
+     "La revisión, la verificación tardía, el pronto pago, la ineficacia, la extensión y la responsabilidad "
+     "tramitan en pieza separada con número propio (art. 280). ¿Se cargan como expedientes vinculados al principal, "
+     "cada uno con su flujo, o como hitos del principal? Propuesta para la V1: hitos del principal con el plazo de "
+     "inicio; el trámite interno del incidente (traslado de 10 días y prueba de 20) va en el checklist.",
+     "CYQ_240, CYQ_250, CYQ_765, CYQ_770, CYQ_775"),
+    ("D28", "Producto: vinculación de expedientes en las derivaciones",
+     "Las matrices de ejecutivos y de societarios terminan en 'Sigue en la matriz de concursos' cuando el deudor se "
+     "concursa o quiebra, y societarios deriva a ejecutivos para cobrar la condena. ¿La app permite vincular el "
+     "expediente de origen con el nuevo y copiar las partes? Solo se registra.", "CYQ_010, CYQ_160"),
+    ("D29", "Producto: flujo prejudicial y judicial",
+     "La fase Previa (CYQ_010 a CYQ_030) va al flujo PREJUDICIAL. CYQ_030 (APE) lleva a CYQ_600, que es judicial, "
+     "y CYQ_010 lleva directo a la quiebra o a la verificación. ¿Se admite una transición entre flujos, como en el "
+     "laboral? Propuesta: sí.", "CYQ_010, CYQ_020, CYQ_030"),
+    ("D30", "Producto: catálogo de regímenes y fueros",
+     "El catálogo solo tiene regímenes laborales. Hace falta uno para la LCQ (por ejemplo, NAC_LEY_24522, porque la "
+     "ley es nacional aunque la apliquen los juzgados de PBA) y otro para el CPCCBA (PBA_CIV_DL_7425, ya pedido en "
+     "la matriz sucesoria), que usarían ejecutivos y societarios. También faltan el fuero CIVIL_COMERCIAL, el "
+     "Juzgado Civil y Comercial en courts.court_type y motivos de cierre como homologación, conclusión o clausura. "
+     "Solo se registra; no se modifican el contrato de API ni el modelo de datos.", "Todos"),
+    ("D31", "Producto: hitos que esperan a otros",
+     "La categorización (CYQ_330) necesita la propuesta del deudor (CYQ_300) y las observaciones (CYQ_320); la "
+     "conclusión de la quiebra necesita los dividendos y los honorarios. La app abre caminos en paralelo pero no "
+     "espera a que terminen todos. Propuesta para la V1: lo controla el checklist.", "CYQ_330, CYQ_830"),
+]

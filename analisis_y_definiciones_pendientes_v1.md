@@ -152,7 +152,7 @@ El plan por semanas está en la sección 13.
    | Interrupción de un plazo (vuelve a empezar) | Manual | Se corrige el Día Cero del paso, con motivo. |
    | Habilitación de días u horas inhábiles | No | Fuera de la V1. |
    | Caducidad de instancia y negligencia | No | Fuera de la V1, hasta que se responda la D23. |
-   | Otros procesos (accidentes de trabajo, amparos, ejecuciones autónomas) y otras jurisdicciones | No | Fuera de la V1; se cargan como plazos sueltos si hace falta. |
+   | Otros procesos (accidentes de trabajo, amparos, ejecuciones autónomas) y otras jurisdicciones | No | Fuera de la V1; se cargan como plazos sueltos si hace falta. Accidentes de trabajo ya tiene una matriz borrador en `laboral/` para validar el flujo, pero sumarlo a la V1 sigue sin decidirse (depende también de los datos de salud). |
 
 10. **Plazo vencido sin cumplir. Decidido.** "Vencido" se deriva (un paso `PENDIENTE` con el límite ya pasado) y se muestra así:
     - **Mientras corre la gracia**, la tarjeta dice "Último momento: hasta hoy a las 12:00".

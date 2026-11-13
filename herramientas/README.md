@@ -13,6 +13,7 @@
 | `matriz/diagrama.py` | Lee la planilla y genera los diagramas Mermaid: el detalle en `diagrama_flujo_laboral_pba_ley_11653.md` y la vista general en `salida/diagrama.md`. |
 | `matriz/secciones.md` | Plantilla de las secciones 4 a 6 del documento de proyecto (formato de la matriz, tablas y diagrama). |
 | `matriz/armar_documento.py` | Reemplaza las secciones 4 a 6 de `documentacion_de_proyecto_asistente_legal_pba.md` con la plantilla, las tablas y la vista general. Las secciones 1 a 3 no se tocan. |
+| `matriz/cargar_datos.py` | Carga el módulo de datos que se pasa como último argumento a `generar.py`, `verificar_excel.py` y `diagrama.py`. Sin ese argumento usan `datos.py`. Lo usan las matrices de `laboral/`. |
 | `matriz/salida/` | Archivos intermedios que generan los scripts. No se editan a mano. |
 | `requirements.txt` | Dependencias de Python, con versión fija. |
 | `pantallas/capturar.cjs` | Genera las capturas PNG de las maquetas (`diseno/pantallas/*.html`) en `diseno/pantallas/capturas/`, que se usan en `diseno_de_pantallas_v1.md`. |
@@ -79,6 +80,8 @@ flowchart LR
   R --> A["4. armar_documento.py"]
   A --> P["Documento de proyecto, secciones 4 a 6"]
 ```
+
+Para las matrices por tipo de reclamo de `laboral/`, los tres primeros pasos reciben además el módulo de datos como último argumento; los comandos están en `laboral/README.md`.
 
 Los scripts validan la matriz antes de escribir. Si algo no cierra (un ID duplicado, una transición a un hito que no existe, un plazo incoherente con su tipo, gracia en un tipo que no la admite), cortan con un error y no generan nada.
 
